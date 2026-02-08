@@ -1,20 +1,43 @@
 package org.sammomanyi.mediaccess.core.domain.util
 
-
-sealed interface DataError : Error {
-    //we can have two types of errors that is Remote error and local error
-    //the remote error is such as the one from server, the local error could be where the database is filled
-    //inside this enum class we try to think of the type of remote errors we can have
-    enum class Remote: DataError{
+sealed interface DataError : Error{
+    enum class Network : DataError {
         REQUEST_TIMEOUT,
-        TOO_MANY_REQUEST,
         NO_INTERNET,
-        SERVER,
+        SERVER_ERROR,
         SERIALIZATION,
+        UNAUTHORIZED,
+        UNKNOWN,
+        NOT_FOUND
+    }
+
+    enum class Local : DataError {
+        DISK_FULL,
+        DATABASE_ERROR,
         UNKNOWN
     }
-    enum class Local: DataError{
-        DISK_FULL,
-        UNKNOWN
+
+    // Add validation errors
+    enum class Validation : DataError {
+        EMPTY_FIELD,
+        INVALID_EMAIL,
+        PASSWORD_TOO_SHORT,
+        PASSWORD_TOO_WEAK,
+        INVALID_PHONE_NUMBER,
+        INVALID_DATE_OF_BIRTH,
+        USER_UNDER_AGE,
+        INVALID_MEDICAL_ID,
+        INVALID_VISIT_CODE,   // Add this
+        VISIT_CODE_EXPIRED,   // Add this
+        VISIT_CODE_USED       // Add this
+    }
+
+    // Add authentication errors
+    enum class Auth : DataError {
+        INVALID_CREDENTIALS,
+        USER_NOT_FOUND,
+        EMAIL_ALREADY_EXISTS,
+        ACCOUNT_DISABLED,
+        SESSION_EXPIRED
     }
 }

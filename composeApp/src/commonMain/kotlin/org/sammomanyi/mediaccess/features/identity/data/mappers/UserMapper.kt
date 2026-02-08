@@ -1,7 +1,10 @@
 package org.sammomanyi.mediaccess.features.identity.data.mappers
 
+import kotlinx.datetime.LocalDate
 import org.sammomanyi.mediaccess.features.identity.data.local.UserEntity
 import org.sammomanyi.mediaccess.features.identity.domain.model.User
+import org.sammomanyi.mediaccess.features.identity.domain.model.Gender
+import org.sammomanyi.mediaccess.features.identity.domain.model.UserRole
 
 fun UserEntity.toUser(): User {
     return User(
@@ -9,18 +12,39 @@ fun UserEntity.toUser(): User {
         firstName = firstName,
         lastName = lastName,
         email = email,
+        phoneNumber = phoneNumber,
+        dateOfBirth = dateOfBirth, // Already a string
+        gender = gender,           // Already a string
+        role = role,               // Already a string
+        medicalId = medicalId,
+        nationalId = nationalId,
         balance = balance,
-        medicalId = medicalId
+        profileImageUrl = profileImageUrl,
+        isEmailVerified = isEmailVerified,
+        createdAt = createdAt
     )
 }
 
-fun User.toUserEntity(): UserEntity {
+fun User.toEntity(): UserEntity {
     return UserEntity(
         id = id,
         firstName = firstName,
         lastName = lastName,
         email = email,
+        phoneNumber = phoneNumber,
+        dateOfBirth = dateOfBirth, // Already a string
+        gender = gender,           // Already a string
+        role = role,               // Already a string
+        medicalId = medicalId,
+        nationalId = nationalId,
         balance = balance,
-        medicalId = medicalId
+        profileImageUrl = profileImageUrl,
+        isEmailVerified = isEmailVerified,
+        createdAt = createdAt
     )
 }
+
+// Helper extensions for UI layer
+fun User.getGenderEnum(): Gender = Gender.valueOf(gender)
+fun User.getRoleEnum(): UserRole = UserRole.valueOf(role)
+fun User.getDateOfBirthLocal(): LocalDate = LocalDate.parse(dateOfBirth)

@@ -1,6 +1,8 @@
+import org.gradle.declarative.dsl.schema.FqName.Empty.packageName
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -10,17 +12,45 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.googleServices)
+    alias(libs.plugins.buildKonfig)
 }
 
+// Load the properties file
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+val firebaseApiKey = localProperties.getProperty("FIREBASE_API_KEY") ?: ""
+val firebaseProjectId = localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""
+
+buildkonfig {
+    // This must match your app's package name
+    packageName = "org.sammomanyi.mediaccess"
+
+    defaultConfigs {
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "FIREBASE_API_KEY",
+            localProperties.getProperty("FIREBASE_API_KEY") ?: ""
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "FIREBASE_PROJECT_ID",
+            localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""
+        )
+    }
+}
 kotlin {
     androidTarget {
         compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_11)
+            jvmTarget.set(JvmTarget.JVM_17)
         }
     }
     
     jvm("desktop")
-
 
             // This is the fix: explicitly 'getting' the desktopMain source set
 
@@ -60,6 +90,14 @@ kotlin {
             implementation(libs.bundles.ktor)
             implementation(libs.bundles.coil)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.firebase.auth)
+            implementation(libs.firebase.firestore)
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")    // Make sure this exists!
+
+            implementation(libs.jetbrains.compose.navigation) // Add this line
+            implementation(libs.compose.icons.extended) // Add this line
+
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -112,8 +150,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 

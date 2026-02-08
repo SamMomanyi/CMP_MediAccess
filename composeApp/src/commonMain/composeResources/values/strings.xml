@@ -1,0 +1,24 @@
+<resources>
+    <string name="error_request_timeout">Request timed out. Please try again.</string>
+    <string name="error_no_internet">No internet connection.</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_unauthorized">Unauthorized. Please login again.</string>
+    <string name="error_not_found">Resource not found.</string>
+
+    <string name="error_field_required">This field is required.</string>
+    <string name="error_invalid_email">Please enter a valid email address.</string>
+    <string name="error_password_too_short">Password must be at least 8 characters.</string>
+    <string name="error_password_weak">Password must contain uppercase, lowercase, and numbers.</string>
+    <string name="error_invalid_phone">Please enter a valid phone number.</string>
+    <string name="error_code_invalid">Invalid visit code.</string>
+    <string name="error_code_expired">Visit code has expired.</string>
+    <string name="error_code_used">Visit code has already been used.</string>
+
+    <string name="error_invalid_credentials">Invalid email or password.</string>
+    <string name="error_user_not_found">User not found.</string>
+    <string name="error_email_exists">An account with this email already exists.</string>
+    <string name="error_account_disabled">Your account has been disabled.</string>
+    <string name="error_session_expired">Session expired. Please login again.</string>
+
+    <string name="error_unknown">An unexpected error occurred.</string>
+</resources>

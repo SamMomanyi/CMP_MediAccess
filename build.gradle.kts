@@ -11,4 +11,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.room) apply false
   //  alias(libs.plugins.jetbrainsCompose) apply false
+    // ... other plugins
+    alias(libs.plugins.buildKonfig) apply false
 }

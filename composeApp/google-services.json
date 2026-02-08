@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "588195843985",
+    "project_id": "mediaccess-52e27",
+    "storage_bucket": "mediaccess-52e27.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588195843985:android:e284487a4e349b482b5430",
+        "android_client_info": {
+          "package_name": "org.sammomanyi.mediaccess"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "588195843985-frjbt6lguljcsr1nqq9srjr6ih9dvmpv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC81arYu88pHizJgHewDFhyogs1fPy6CAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "588195843985-frjbt6lguljcsr1nqq9srjr6ih9dvmpv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
