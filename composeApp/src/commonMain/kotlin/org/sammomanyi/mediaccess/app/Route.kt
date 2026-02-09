@@ -8,4 +8,5 @@ sealed interface Route {
     @Serializable object Register : Route
     @Serializable object MainGraph : Route
     @Serializable object Dashboard : Route
+
 }
