@@ -11,7 +11,11 @@ sealed interface Route {
 
     @Serializable object MainGraph : Route
     @Serializable object Home : Route
-    @Serializable object Records : Route
-    @Serializable object Hospitals : Route
-    @Serializable object Profile : Route
+
+    @Serializable data object Care : Route      // Renamed from Hospitals
+    @Serializable data object Cover : Route     // New
+    @Serializable data object Personal : Route  // Renamed from Profile
+    @Serializable data object More : Route      // New
+
+
 }

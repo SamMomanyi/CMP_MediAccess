@@ -1,10 +1,7 @@
 package org.sammomanyi.mediaccess.app
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -14,10 +11,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import org.sammomanyi.mediaccess.features.identity.presentation.care.CareScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.cover.CoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.hospitals.HospitalsScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalScreen
 
 data class BottomNavItem(
     val route: Route,
@@ -34,9 +32,10 @@ fun MainScreen(
 
     val bottomNavItems = listOf(
         BottomNavItem(Route.Home, "Home", Icons.Default.Home),
-        BottomNavItem(Route.Records, "Records", Icons.AutoMirrored.Filled.List),
-        BottomNavItem(Route.Hospitals, "Hospitals", Icons.Default.Place),
-        BottomNavItem(Route.Profile, "Profile", Icons.Default.Person)
+        BottomNavItem(Route.Care, "Care", Icons.Default.Favorite),
+        BottomNavItem(Route.Cover, "Cover", Icons.Default.Shield),
+        BottomNavItem(Route.Personal, "Personal", Icons.Default.Person),
+        BottomNavItem(Route.More, "More", Icons.Default.Menu)
     )
 
     Scaffold(
@@ -68,22 +67,31 @@ fun MainScreen(
             startDestination = Route.Home
         ) {
             composable<Route.Home> {
-                HomeScreen(padding = padding)
+                HomeScreen(
+                    padding = padding,
+                    onNavigateToHospitals = {
+                        navController.navigate(Route.Care)
+                    }
+                )
             }
 
-            composable<Route.Records> {
-                RecordsScreen(padding = padding)
+            composable<Route.Care> {
+                CareScreen(padding = padding)
             }
 
-            composable<Route.Hospitals> {
-                HospitalsScreen(padding = padding)
+            composable<Route.Cover> {
+                CoverScreen(padding = padding)
             }
 
-            composable<Route.Profile> {
-                ProfileScreen(
+            composable<Route.Personal> {
+                PersonalScreen(
                     padding = padding,
                     onLogout = onLogout
                 )
+            }
+
+            composable<Route.More> {
+                MoreScreen(padding = padding)
             }
         }
     }

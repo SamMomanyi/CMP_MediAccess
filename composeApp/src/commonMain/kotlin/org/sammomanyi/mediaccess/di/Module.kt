@@ -35,9 +35,11 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.LogoutUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.RegisterUserUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.SyncHospitalsUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.SyncRecordsUseCase
+import org.sammomanyi.mediaccess.features.identity.presentation.care.CareViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.hospitals.HospitalsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginViewModel
+import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
@@ -109,7 +111,8 @@ val sharedModule = module {
     viewModelOf(::RecordsViewModel)
     viewModelOf(::HospitalsViewModel)
     viewModelOf(::ProfileViewModel)
-
+    viewModelOf(::CareViewModel)  // ADD THIS
+    viewModelOf(::PersonalViewModel)
 }
 
 

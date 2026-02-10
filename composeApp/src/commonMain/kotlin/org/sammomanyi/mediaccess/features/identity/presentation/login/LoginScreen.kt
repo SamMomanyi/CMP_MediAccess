@@ -104,6 +104,7 @@ fun LoginScreen(
                     )
                 )
             )
+            .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier

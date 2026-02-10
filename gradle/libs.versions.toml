@@ -13,6 +13,8 @@ androidx-lifecycle = "2.9.4"
 compose-multiplatform = "1.9.1"
 compose-jetbrains = "1.9.1"
 
+#compass
+compass = "1.2.0"
 
 androidx-appcompat = "1.7.1"
 androidx-core = "1.17.0"
@@ -53,6 +55,9 @@ firebase-kotlin = "2.1.0"
 googleServicesAuth = "21.2.0"
 credentials = "1.2.2"
 googleid = "1.1.1"
+
+# ... accompanist version ...
+accompanist = "0.32.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -131,7 +136,15 @@ androidx-credentials = { module = "androidx.credentials:credentials", version.re
 androidx-credentials-play-services = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
+# ... accompanist library ...
+accompanist-flowlayout = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanist" }
 
+# Geolocation (Coordinates)
+compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
+compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
+# Geocoding (Coordinates <-> City Names)
+compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
+compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }

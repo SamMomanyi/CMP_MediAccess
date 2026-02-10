@@ -70,4 +70,17 @@
     <string name="register_button_label">Register</string>
     <string name="welcome_logo_content_description">MediAccess Logo</string>
 
+
+    <string name="nav_home">Home</string>
+    <string name="nav_care">Care</string>
+    <string name="nav_cover">Cover</string>
+    <string name="nav_personal">Personal</string>
+    <string name="nav_more">More</string>
+
+    <string name="title_care">Locate Provider</string>
+    <string name="title_cover">My Covers</string>
+    <string name="title_personal">My Profile</string>
+    <string name="title_more">More Options</string>
+
+
 </resources>

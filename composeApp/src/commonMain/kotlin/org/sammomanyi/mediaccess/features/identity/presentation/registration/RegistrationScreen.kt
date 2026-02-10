@@ -84,6 +84,7 @@ fun RegistrationScreen(
                     )
                 )
             )
+            .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier

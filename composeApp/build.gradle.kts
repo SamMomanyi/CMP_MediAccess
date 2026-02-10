@@ -102,6 +102,8 @@ kotlin {
 
             implementation(libs.jetbrains.compose.navigation) // Add this line
             implementation(libs.compose.icons.extended) // Add this line
+            // ... accompanist dependency...
+            implementation(libs.accompanist.flowlayout)
 
 
         }
