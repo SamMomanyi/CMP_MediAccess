@@ -1,23 +1,33 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.care
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mediaccess.composeapp.generated.resources.Res
+import mediaccess.composeapp.generated.resources.logo
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
-import org.sammomanyi.mediaccess.core.util.rememberLocationState
+import org.sammomanyi.mediaccess.core.util.rememberLocationHelper
+import org.sammomanyi.mediaccess.core.util.LocationState
 
 @Composable
 fun CareScreen(
@@ -25,74 +35,94 @@ fun CareScreen(
     viewModel: CareViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val locationState = rememberLocationState()
+
+    // UI State for tracking location locally in the Composable
+    var internalLocationState by remember { mutableStateOf(LocationState()) }
+
+    // Initialize the KMP Helper
+    val locationHelper = rememberLocationHelper { granted ->
+        internalLocationState = internalLocationState.copy(permissionGranted = granted)
+    }
 
     var selectedTab by remember { mutableStateOf(CareTab.LOCATE_PROVIDER) }
 
-    // Request location permission on first launch
+    // --- Logic Blocks ---
+
+    // 1. Request permission on first launch
     LaunchedEffect(Unit) {
-        if (!locationState.checkPermission()) {
-            locationState.requestPermission()
+        if (!locationHelper.checkPermission()) {
+            locationHelper.requestPermission()
+        } else {
+            internalLocationState = internalLocationState.copy(permissionGranted = true)
         }
     }
 
-    // Get location when permission is granted
-    LaunchedEffect(locationState.state.permissionGranted) {
-        if (locationState.state.permissionGranted) {
-            locationState.getCurrentLocation()
+    // 2. Get location when permission is granted
+    LaunchedEffect(internalLocationState.permissionGranted) {
+        if (internalLocationState.permissionGranted) {
+            internalLocationState = internalLocationState.copy(isLoading = true)
+            locationHelper.getCurrentLocation { lat, lon, err ->
+                internalLocationState = internalLocationState.copy(
+                    latitude = lat,
+                    longitude = lon,
+                    error = err,
+                    isLoading = false
+                )
+            }
         }
     }
 
-    // Update ViewModel with location
-    LaunchedEffect(locationState.state.latitude, locationState.state.longitude) {
-        val lat = locationState.state.latitude
-        val lon = locationState.state.longitude
+    // 3. Update ViewModel with coordinates for filtering
+    LaunchedEffect(internalLocationState.latitude, internalLocationState.longitude) {
+        val lat = internalLocationState.latitude
+        val lon = internalLocationState.longitude
         if (lat != null && lon != null) {
             viewModel.onAction(CareAction.OnLocationUpdated(lat, lon))
         }
     }
 
+    // --- UI Layout ---
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MediAccessColors.Background)
+            .background(Color(0xFFF5F5F5))
             .padding(padding)
     ) {
-        // Header
+        // Aligned Header
         CareHeader()
 
-        // Tabs
+        // Aligned Tabs
         TabRow(
             selectedTabIndex = selectedTab.ordinal,
             containerColor = Color.White,
-            contentColor = MediAccessColors.Primary
+            contentColor = MediAccessColors.Primary,
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
+                    color = MediAccessColors.Primary
+                )
+            },
+            divider = {}
         ) {
-            Tab(
-                selected = selectedTab == CareTab.LOCATE_PROVIDER,
-                onClick = { selectedTab = CareTab.LOCATE_PROVIDER },
-                text = {
-                    Text(
-                        "Locate Provider",
-                        fontWeight = if (selectedTab == CareTab.LOCATE_PROVIDER) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            )
-            Tab(
-                selected = selectedTab == CareTab.MY_VISITS,
-                onClick = { selectedTab = CareTab.MY_VISITS },
-                text = {
-                    Text(
-                        "My Visits",
-                        fontWeight = if (selectedTab == CareTab.MY_VISITS) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            )
+            CareTab.entries.forEach { tab ->
+                Tab(
+                    selected = selectedTab == tab,
+                    onClick = { selectedTab = tab },
+                    text = {
+                        Text(
+                            text = if (tab == CareTab.LOCATE_PROVIDER) "Locate Provider" else "My Visits",
+                            fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
+                            color = if (selectedTab == tab) MediAccessColors.Primary else Color.Gray
+                        )
+                    }
+                )
+            }
         }
 
         when (selectedTab) {
             CareTab.LOCATE_PROVIDER -> LocateProviderContent(
                 state = state,
-                locationState = locationState.state,
+                locationState = internalLocationState,
                 onAction = viewModel::onAction
             )
             CareTab.MY_VISITS -> MyVisitsContent(
@@ -107,55 +137,54 @@ fun CareScreen(
 private fun CareHeader() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White
+        color = Color.White,
+        shadowElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    modifier = Modifier.size(40.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MediAccessColors.Primary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "SA",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Smart\nACCESS",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MediAccessColors.Secondary,
-                    fontWeight = FontWeight.Bold
+                Image(
+                    painter = painterResource(Res.drawable.logo),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(8.dp))
                 )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "Medi",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MediAccessColors.Secondary,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 16.sp
+                    )
+                    Text(
+                        text = "ACCESS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MediAccessColors.Primary,
+                        fontWeight = FontWeight.ExtraBold,
+                        lineHeight = 12.sp
+                    )
+                }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = { }) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.Gray)
                 }
-                IconButton(onClick = { }) {
-                    Surface(
-                        modifier = Modifier.size(32.dp),
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = MediAccessColors.SurfaceVariant
-                    ) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile",
-                            modifier = Modifier.padding(6.dp)
-                        )
-                    }
+                Surface(
+                    modifier = Modifier.size(32.dp),
+                    shape = CircleShape,
+                    color = Color.LightGray.copy(alpha = 0.4f)
+                ) {
+                    Icon(Icons.Default.Person, contentDescription = "Profile", modifier = Modifier.padding(6.dp), tint = Color.White)
                 }
             }
         }
@@ -165,7 +194,7 @@ private fun CareHeader() {
 @Composable
 private fun LocateProviderContent(
     state: CareState,
-    locationState: org.sammomanyi.mediaccess.core.util.LocationState,
+    locationState: LocationState,
     onAction: (CareAction) -> Unit
 ) {
     Column(
@@ -173,28 +202,20 @@ private fun LocateProviderContent(
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // Initiate Visit Button
         Button(
             onClick = { onAction(CareAction.OnInitiateVisit) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MediAccessColors.Secondary
-            ),
-            shape = RoundedCornerShape(12.dp)
+                .height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Icon(Icons.Default.CalendarToday, contentDescription = null)
+            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "Initiate a visit",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("Initiate a visit", fontWeight = FontWeight.Bold)
         }
 
-        // Search and Filter
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,25 +225,24 @@ private fun LocateProviderContent(
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = { onAction(CareAction.OnSearchQueryChange(it)) },
-                placeholder = { Text("Search Healthcare...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = { Text("Search Healthcare...", color = Color.Gray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MediAccessColors.SurfaceVariant
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedTextColor = MediAccessColors.TextPrimary
                 ),
                 singleLine = true
             )
 
             Button(
                 onClick = { onAction(CareAction.OnFilterClick) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MediAccessColors.Secondary
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(56.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.height(54.dp)
             ) {
-                Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                Icon(Icons.Default.Tune, contentDescription = "Filter")
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Filter")
             }
@@ -230,7 +250,6 @@ private fun LocateProviderContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Results Count and Location Toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -240,8 +259,9 @@ private fun LocateProviderContent(
         ) {
             Text(
                 text = "${state.hospitals.size} Results",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.DarkGray
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -249,34 +269,25 @@ private fun LocateProviderContent(
                     checked = state.showNearbyOnly,
                     onCheckedChange = { onAction(CareAction.OnToggleNearby) },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MediAccessColors.Primary,
-                        checkedTrackColor = MediAccessColors.PrimaryLight
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = MediAccessColors.Primary
                     )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Providers Near Me",
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text("Providers Near Me", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Hospitals List
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        if (state.isLoading || locationState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MediAccessColors.Primary)
             }
         } else if (state.hospitals.isEmpty()) {
             EmptyHospitalsView()
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(16.dp)
             ) {
                 items(state.hospitals) { hospital ->
                     HospitalListItem(
@@ -301,42 +312,37 @@ private fun HospitalListItem(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = hospital.name.uppercase(),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.DarkGray
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = hospital.address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MediAccessColors.TextSecondary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Circle, null, modifier = Modifier.size(8.dp), tint = Color.LightGray)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(hospital.address, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
             }
 
             if (userLat != null && userLon != null) {
-                Surface(
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = MediAccessColors.SurfaceVariant
-                ) {
-                    Text(
-                        text = hospital.formattedDistance(userLat, userLon),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+                Text(
+                    text = hospital.formattedDistance(userLat, userLon),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MediAccessColors.Primary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -347,107 +353,40 @@ private fun MyVisitsContent(
     state: CareState,
     onAction: (CareAction) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        // Initiate Visit Button
+    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Button(
             onClick = { onAction(CareAction.OnInitiateVisit) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MediAccessColors.Secondary
-            ),
-            shape = RoundedCornerShape(12.dp)
+            modifier = Modifier.fillMaxWidth().padding(16.dp).height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+            shape = RoundedCornerShape(8.dp)
         ) {
-            Icon(Icons.Default.CalendarToday, contentDescription = null)
+            Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "Initiate a visit",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Text("Initiate a visit", fontWeight = FontWeight.Bold)
         }
 
-        // Empty State
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Illustration placeholder
-                Box(
-                    modifier = Modifier
-                        .size(200.dp)
-                        .background(
-                            color = MediAccessColors.Secondary.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.FolderOpen,
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        tint = MediAccessColors.Secondary
-                    )
-                    // Add "No data found" text overlay
-                    Text(
-                        text = "No data\nfound",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "NO VISITS FOUND",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MediAccessColors.TextPrimary
-                )
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Folder, null, modifier = Modifier.size(160.dp), tint = Color(0xFFF28B82))
+                Text("No data\nfound", color = Color.White, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             }
+            Spacer(modifier = Modifier.height(20.dp))
+            Text("NO VISITS FOUND", fontWeight = FontWeight.Bold, color = Color.Black)
         }
     }
 }
 
 @Composable
 private fun EmptyHospitalsView() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Default.SearchOff,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MediAccessColors.TextSecondary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "No hospitals found",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MediAccessColors.TextSecondary
-            )
-        }
+    Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Icon(Icons.Default.SearchOff, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("No hospitals found", color = Color.Gray)
     }
 }
 
-enum class CareTab {
-    LOCATE_PROVIDER,
-    MY_VISITS
-}
+enum class CareTab { LOCATE_PROVIDER, MY_VISITS }

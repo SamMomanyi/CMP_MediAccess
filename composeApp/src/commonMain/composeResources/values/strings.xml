@@ -82,5 +82,15 @@
     <string name="title_personal">My Profile</string>
     <string name="title_more">More Options</string>
 
+    <string name="app_name">MediAccess</string>
+    <string name="home_greeting">Hi %s,</string>
+    <string name="home_tagline">Experience convenience at your fingertips</string>
+    <string name="my_covers">My Covers</string>
+    <string name="link_cover">Link Cover</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="wellness">Wellness</string>
+    <string name="wellness_tagline">One step at a time</string>
+    <string name="care">Care</string>
+    <string name="articles_title">Health Articles</string>
 
 </resources>

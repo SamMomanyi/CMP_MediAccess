@@ -139,12 +139,21 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 # ... accompanist library ...
 accompanist-flowlayout = { module = "com.google.accompanist:accompanist-flowlayout", version.ref = "accompanist" }
 
-# Geolocation (Coordinates)
+# Compass - Location
 compass-geolocation = { module = "dev.jordond.compass:geolocation", version.ref = "compass" }
 compass-geolocation-mobile = { module = "dev.jordond.compass:geolocation-mobile", version.ref = "compass" }
-# Geocoding (Coordinates <-> City Names)
+compass-permissions-mobile = { module = "dev.jordond.compass:permissions-mobile", version.ref = "compass" }
+
+# Compass - Geocoding (Coordinates <-> Address)
 compass-geocoder = { module = "dev.jordond.compass:geocoder", version.ref = "compass" }
+
+# Compass - Autocomplete (Place suggestions)
+compass-autocomplete = { module = "dev.jordond.compass:autocomplete", version.ref = "compass" }
+
+# Compass - Mobile implementations (Android + iOS)
 compass-geocoder-mobile = { module = "dev.jordond.compass:geocoder-mobile", version.ref = "compass" }
+compass-autocomplete-mobile = { module = "dev.jordond.compass:autocomplete-mobile", version.ref = "compass" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }

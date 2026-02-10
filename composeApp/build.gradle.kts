@@ -70,6 +70,23 @@ kotlin {
             implementation(libs.androidx.credentials)
             implementation(libs.androidx.credentials.play.services)
             implementation(libs.googleid)
+
+            implementation(libs.jetbrains.compose.navigation) // Add this line
+
+            // ... accompanist dependency...
+            implementation(libs.accompanist.flowlayout)
+            // --- Compass Location ---
+            implementation(libs.compass.geolocation)
+            implementation(libs.compass.geolocation.mobile)
+            implementation(libs.compass.permissions.mobile)
+
+            // --- Compass Geocoding ---
+            implementation(libs.compass.geocoder)
+            implementation(libs.compass.geocoder.mobile)
+
+            // --- Compass Autocomplete ---
+            implementation(libs.compass.autocomplete)
+            implementation(libs.compass.autocomplete.mobile)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -99,12 +116,16 @@ kotlin {
             implementation(libs.firebase.auth)
             implementation(libs.firebase.firestore)
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")    // Make sure this exists!
+            implementation(libs.compose.icons.extended)
 
-            implementation(libs.jetbrains.compose.navigation) // Add this line
-            implementation(libs.compose.icons.extended) // Add this line
-            // ... accompanist dependency...
-            implementation(libs.accompanist.flowlayout)
+            // Ktor
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
 
+            // Image Loading (For the News Images)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
 
         }
         commonTest.dependencies {

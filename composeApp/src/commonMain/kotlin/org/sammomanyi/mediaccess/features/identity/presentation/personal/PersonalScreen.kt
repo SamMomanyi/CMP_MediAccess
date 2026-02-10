@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.accompanist.flowlayout.FlowRow
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 
 @Composable
@@ -387,8 +387,8 @@ private fun MyTopicsSection(
             // Topics Grid using FlowRow
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                mainAxisSpacing = 8.dp,
-                crossAxisSpacing = 8.dp
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allTopics.forEach { topic ->
                     val isSelected = selectedTopics.contains(topic)

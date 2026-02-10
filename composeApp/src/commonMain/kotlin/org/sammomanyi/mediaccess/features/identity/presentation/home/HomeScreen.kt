@@ -21,8 +21,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import mediaccess.composeapp.generated.resources.Res
+import mediaccess.composeapp.generated.resources.articles_title
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
+import org.sammomanyi.mediaccess.features.identity.domain.model.Article
 
 @Composable
 fun HomeScreen(
@@ -36,7 +41,8 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(padding)
-            .background(MediAccessColors.Background)
+           // .background(MediAccessColors.Background)
+            .background(Color(0xFFF5F5F5))
     ) {
         // Header with greeting
         item {
@@ -67,7 +73,10 @@ fun HomeScreen(
 
         // Articles Section
         item {
-            ArticlesSection()
+            ArticlesSection(
+                articles = state.articles,
+                isLoading = state.isLoadingNews
+            )
         }
 
         item {
@@ -104,7 +113,7 @@ private fun HomeHeader(userName: String) {
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Smart\nACCESS",
+                text = "Medi\nACCESS",
                 style = MaterialTheme.typography.titleSmall,
                 color = MediAccessColors.Secondary,
                 fontWeight = FontWeight.Bold,
@@ -484,111 +493,79 @@ private fun CareActionCard(
 }
 
 @Composable
-private fun ArticlesSection() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 12.dp)
-        ) {
-            Icon(
-                Icons.Default.Article,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MediAccessColors.Primary
-            )
+private fun ArticlesSection(
+    articles: List<Article>,
+    isLoading: Boolean
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Article, null, tint = MediAccessColors.Primary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Articles",
+                text = stringResource(Res.string.articles_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        // Topic Filter
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MediAccessColors.Secondary,
-            modifier = Modifier.padding(bottom = 12.dp)
-        ) {
-            Text(
-                text = "skin",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        } else {
+            // We use a Column inside the LazyColumn item (No nested scrolling issues)
+            articles.forEach { article ->
+                ArticleCard(article)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
-
-        // Article Cards
-        ArticleCard(
-            title = "This new Microneedling technique made me look 5 years young...",
-            date = "2023-1-12"
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        ArticleCard(
-            title = "12 Natural Remedies For Dry Skin in Winter",
-            date = "2023-1-13"
-        )
     }
 }
 
 @Composable
-private fun ArticleCard(title: String, date: String) {
+private fun ArticleCard(article: Article) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
-            // Image placeholder
-            Box(
+            // AsyncImage from Coil 3
+            AsyncImage(
+                model = article.imageUrl,
+                contentDescription = article.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
-                    .background(MediAccessColors.SurfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Image,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MediAccessColors.TextSecondary
-                )
-            }
+                    .height(160.dp)
+                    .background(Color.LightGray),
+                contentScale = ContentScale.Crop
+            )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f),
+                    text = article.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 2
                 )
-                Column(horizontalAlignment = Alignment.End) {
-                    Icon(
-                        Icons.Default.RssFeed,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MediAccessColors.Secondary
-                    )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = date,
+                        text = article.date,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MediAccessColors.TextSecondary
+                        color = Color.Gray
                     )
+                    TextButton(onClick = { /* Open web link */ }) {
+                        Text("Read More", color = MediAccessColors.Secondary)
+                    }
                 }
             }
         }
     }
 }
+
