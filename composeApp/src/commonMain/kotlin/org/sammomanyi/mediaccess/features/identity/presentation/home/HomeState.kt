@@ -9,5 +9,6 @@ data class HomeState(
     val articles: List<Article> = emptyList(), // Added
     val isLoading: Boolean = false,
     val isLoadingNews: Boolean = false, // Added
+    val isRefreshing: Boolean = false,
     val errorMessage: UiText? = null
 )

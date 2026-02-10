@@ -17,5 +17,7 @@ sealed interface Route {
     @Serializable data object Personal : Route  // Renamed from Profile
     @Serializable data object More : Route      // New
 
-
+    // Additional Screens
+    @Serializable object Notifications : Route
+    @Serializable object Profile : Route
 }

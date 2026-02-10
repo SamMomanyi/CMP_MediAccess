@@ -1,15 +1,16 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.home
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,71 +23,138 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import mediaccess.composeapp.generated.resources.Res
-import mediaccess.composeapp.generated.resources.articles_title
-import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 import org.sammomanyi.mediaccess.features.identity.domain.model.Article
+import org.sammomanyi.mediaccess.features.identity.presentation.home.dialogs.*
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
     padding: PaddingValues,
     onNavigateToHospitals: () -> Unit,
+    onNavigateToBenefits: () -> Unit,
+    onNavigateToSpent: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LazyColumn(
+    // Dialog states
+    var showBenefitsDialog by remember { mutableStateOf(false) }
+    var showSpentDialog by remember { mutableStateOf(false) }
+    var showQuickActionsDialog by remember { mutableStateOf(false) }
+    var showWellnessDialog by remember { mutableStateOf(false) }
+    var showLinkCoverDialog by remember { mutableStateOf(false) }
+
+    // Pull to refresh
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isRefreshing,
+        onRefresh = { viewModel.onAction(HomeAction.OnRefresh) }
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-           // .background(MediAccessColors.Background)
-            .background(Color(0xFFF5F5F5))
+            .pullRefresh(pullRefreshState)
     ) {
-        // Header with greeting
-        item {
-            HomeHeader(userName = state.user?.firstName ?: "User")
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(Color(0xFFF5F5F5))
+        ) {
+            item {
+                HomeHeader(
+                    userName = state.user?.firstName ?: "User",
+                    onNotificationsClick = onNavigateToNotifications,
+                    onProfileClick = onNavigateToProfile
+                )
+            }
+
+            item {
+                MyCoversSection(
+                    onLinkCoverClick = { showLinkCoverDialog = true }
+                )
+            }
+
+            item {
+                QuickActionsButton(
+                    onClick = { showQuickActionsDialog = true }
+                )
+            }
+
+            item {
+                WellnessSection(
+                    onLetsDoItClick = { showWellnessDialog = true }
+                )
+            }
+
+            item {
+                CareSection(
+                    onVisitClick = { },
+                    onBenefitsClick = { showBenefitsDialog = true },
+                    onSpentClick = { showSpentDialog = true },
+                    onHospitalClick = onNavigateToHospitals
+                )
+            }
+
+            item {
+                ArticlesSection(
+                    articles = state.articles,
+                    isLoading = state.isLoadingNews
+                )
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
 
-        // My Covers Section
-        item {
-            MyCoversSection()
-        }
+        PullRefreshIndicator(
+            refreshing = state.isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = MediAccessColors.Primary
+        )
+    }
 
-        // Quick Actions Button
-        item {
-            QuickActionsButton()
-        }
+    // All Dialogs
+    if (showBenefitsDialog) {
+        BenefitsDialog(onDismiss = { showBenefitsDialog = false })
+    }
 
-        // Wellness Section
-        item {
-            WellnessSection()
-        }
+    if (showSpentDialog) {
+        SpentDialog(onDismiss = { showSpentDialog = false })
+    }
 
-        // Care Section
-        item {
-            CareSection(
-                onNavigateToHospitals = onNavigateToHospitals
-            )
-        }
+    if (showQuickActionsDialog) {
+        QuickActionsDialog(
+            onDismiss = { showQuickActionsDialog = false },
+            onSearchClick = onNavigateToHospitals
+        )
+    }
 
-        // Articles Section
-        item {
-            ArticlesSection(
-                articles = state.articles,
-                isLoading = state.isLoadingNews
-            )
-        }
+    if (showWellnessDialog) {
+        WellnessDialog(onDismiss = { showWellnessDialog = false })
+    }
 
-        item {
-            Spacer(modifier = Modifier.height(24.dp))
-        }
+    if (showLinkCoverDialog) {
+        LinkCoverDialog(
+            userEmail = state.user?.email ?: "",
+            onDismiss = { showLinkCoverDialog = false }
+        )
     }
 }
 
 @Composable
-private fun HomeHeader(userName: String) {
+private fun HomeHeader(
+    userName: String,
+    onNotificationsClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -95,7 +163,6 @@ private fun HomeHeader(userName: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 modifier = Modifier.size(40.dp),
@@ -104,7 +171,7 @@ private fun HomeHeader(userName: String) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
-                        text = "SA",
+                        text = userName.take(2).uppercase(),
                         style = MaterialTheme.typography.titleSmall,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
@@ -113,23 +180,22 @@ private fun HomeHeader(userName: String) {
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Medi\nACCESS",
-                style = MaterialTheme.typography.titleSmall,
+                text = "MediAccess",
+                style = MaterialTheme.typography.titleMedium,
                 color = MediAccessColors.Secondary,
-                fontWeight = FontWeight.Bold,
-                lineHeight = MaterialTheme.typography.titleSmall.lineHeight
+                fontWeight = FontWeight.Bold
             )
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = { /* Notifications */ }) {
+            IconButton(onClick = onNotificationsClick) {
                 Icon(
                     Icons.Default.Notifications,
                     contentDescription = "Notifications",
                     tint = MediAccessColors.TextSecondary
                 )
             }
-            IconButton(onClick = { /* Profile */ }) {
+            IconButton(onClick = onProfileClick) {
                 Surface(
                     modifier = Modifier.size(32.dp),
                     shape = CircleShape,
@@ -146,7 +212,6 @@ private fun HomeHeader(userName: String) {
         }
     }
 
-    // Greeting
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,7 +229,7 @@ private fun HomeHeader(userName: String) {
 }
 
 @Composable
-private fun MyCoversSection() {
+private fun MyCoversSection(onLinkCoverClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,12 +237,8 @@ private fun MyCoversSection() {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Favorite,
                     contentDescription = null,
@@ -198,10 +259,7 @@ private fun MyCoversSection() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Illustration placeholder
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Convenience",
                         style = MaterialTheme.typography.titleSmall,
@@ -215,7 +273,6 @@ private fun MyCoversSection() {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Illustration placeholder
                     Box(
                         modifier = Modifier
                             .size(100.dp)
@@ -224,7 +281,7 @@ private fun MyCoversSection() {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.Chair,
+                            Icons.Default.EventSeat,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MediAccessColors.Primary
@@ -234,7 +291,6 @@ private fun MyCoversSection() {
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Cover card
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.End
@@ -261,7 +317,7 @@ private fun MyCoversSection() {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
-                        onClick = { /* Link Cover */ },
+                        onClick = onLinkCoverClick,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MediAccessColors.Secondary
@@ -279,9 +335,9 @@ private fun MyCoversSection() {
 }
 
 @Composable
-private fun QuickActionsButton() {
+private fun QuickActionsButton(onClick: () -> Unit) {
     Button(
-        onClick = { /* Quick Actions */ },
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
@@ -300,7 +356,7 @@ private fun QuickActionsButton() {
 }
 
 @Composable
-private fun WellnessSection() {
+private fun WellnessSection(onLetsDoItClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -308,12 +364,8 @@ private fun WellnessSection() {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.FitnessCenter,
                     contentDescription = null,
@@ -348,7 +400,6 @@ private fun WellnessSection() {
                     )
                 }
 
-                // Exercise illustration placeholder
                 Box(
                     modifier = Modifier
                         .size(80.dp)
@@ -365,7 +416,7 @@ private fun WellnessSection() {
                 }
 
                 OutlinedButton(
-                    onClick = { /* Wellness action */ },
+                    onClick = onLetsDoItClick,
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MediAccessColors.Secondary
@@ -379,7 +430,12 @@ private fun WellnessSection() {
 }
 
 @Composable
-private fun CareSection(onNavigateToHospitals: () -> Unit) {
+private fun CareSection(
+    onVisitClick: () -> Unit,
+    onBenefitsClick: () -> Unit,
+    onSpentClick: () -> Unit,
+    onHospitalClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -387,12 +443,8 @@ private fun CareSection(onNavigateToHospitals: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.MedicalServices,
                     contentDescription = null,
@@ -417,7 +469,6 @@ private fun CareSection(onNavigateToHospitals: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Care Actions Grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -426,25 +477,25 @@ private fun CareSection(onNavigateToHospitals: () -> Unit) {
                     icon = Icons.Default.LocalHospital,
                     label = "VISIT",
                     modifier = Modifier.weight(1f),
-                    onClick = { }
+                    onClick = onVisitClick
                 )
                 CareActionCard(
                     icon = Icons.Default.CardGiftcard,
                     label = "BENEFITS",
                     modifier = Modifier.weight(1f),
-                    onClick = { }
+                    onClick = onBenefitsClick
                 )
                 CareActionCard(
                     icon = Icons.Default.Payment,
                     label = "SPENT",
                     modifier = Modifier.weight(1f),
-                    onClick = { }
+                    onClick = onSpentClick
                 )
                 CareActionCard(
                     icon = Icons.Default.Business,
                     label = "HOSPITAL",
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToHospitals
+                    onClick = onHospitalClick
                 )
             }
         }
@@ -465,23 +516,23 @@ private fun CareActionCard(
         color = MediAccessColors.SurfaceVariant
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Surface(
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(40.dp),
                 shape = CircleShape,
                 color = Color.White
             ) {
                 Icon(
                     icon,
                     contentDescription = label,
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(8.dp),
                     tint = MediAccessColors.Primary
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -497,12 +548,21 @@ private fun ArticlesSection(
     articles: List<Article>,
     isLoading: Boolean
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Article, null, tint = MediAccessColors.Primary)
+            Icon(
+                Icons.Default.Article,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MediAccessColors.Primary
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = stringResource(Res.string.articles_title),
+                text = "Articles",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -510,13 +570,29 @@ private fun ArticlesSection(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else {
-            // We use a Column inside the LazyColumn item (No nested scrolling issues)
-            articles.forEach { article ->
-                ArticleCard(article)
-                Spacer(modifier = Modifier.height(12.dp))
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            articles.isEmpty() -> {
+                Text(
+                    text = "No articles available",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MediAccessColors.TextSecondary
+                )
+            }
+            else -> {
+                articles.forEach { article ->
+                    ArticleCard(article)
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
     }
@@ -531,14 +607,12 @@ private fun ArticleCard(article: Article) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
-            // AsyncImage from Coil 3
             AsyncImage(
                 model = article.imageUrl,
                 contentDescription = article.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .background(Color.LightGray),
+                    .height(160.dp),
                 contentScale = ContentScale.Crop
             )
 
@@ -555,17 +629,22 @@ private fun ArticleCard(article: Article) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = article.date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                    TextButton(onClick = { /* Open web link */ }) {
-                        Text("Read More", color = MediAccessColors.Secondary)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.RssFeed,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MediAccessColors.Secondary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = article.date,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
                     }
                 }
             }
         }
     }
 }
-

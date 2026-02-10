@@ -8,6 +8,11 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType.Application.Json
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import org.koin.core.module.Module // Import the actual Koin Module type
 import org.koin.dsl.module
 import org.koin.core.module.dsl.singleOf
@@ -16,6 +21,7 @@ import org.koin.dsl.bind
 import org.sammomanyi.mediaccess.BuildKonfig
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
 import org.sammomanyi.mediaccess.core.data.database.getRoomDatabase
+import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
 import org.sammomanyi.mediaccess.features.identity.data.repository.AppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.HospitalRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.IdentityRepositoryImpl
@@ -64,6 +70,20 @@ val sharedModule = module {
         getRoomDatabase(get<RoomDatabase.Builder<MediAccessDatabase>>())
     }
 
+
+    single {
+        HttpClient {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true // CRITICAL: So the app doesn't crash on extra API data
+                    isLenient = true
+                })
+            }
+        }
+    }
+
+    single { NewsService(get()) }
+
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
     single { get<MediAccessDatabase>().hospitalDao }
@@ -79,6 +99,7 @@ val sharedModule = module {
     // 3. Firebase Services
     single { Firebase.auth }
     single { Firebase.firestore }
+    single { NewsService(get()) }
 
     // 4. Using singleOf and bind for the Repository
     // This matches: singleOf(::KtorRemoteBookDataSource).bind<RemoteBookDataSource>()

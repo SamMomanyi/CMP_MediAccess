@@ -71,7 +71,6 @@ kotlin {
             implementation(libs.androidx.credentials.play.services)
             implementation(libs.googleid)
 
-            implementation(libs.jetbrains.compose.navigation) // Add this line
 
             // ... accompanist dependency...
             implementation(libs.accompanist.flowlayout)
@@ -127,6 +126,7 @@ kotlin {
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
 
+            implementation(libs.jetbrains.compose.navigation)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
