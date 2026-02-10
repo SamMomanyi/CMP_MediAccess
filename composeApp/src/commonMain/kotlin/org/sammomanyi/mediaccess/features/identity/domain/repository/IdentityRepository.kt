@@ -16,6 +16,7 @@ interface IdentityRepository {
     suspend fun logout(): Result<Unit, DataError>
     suspend fun updateUserProfile(user: User): Result<Unit, DataError>
     suspend fun resetPassword(email: String): Result<Unit, DataError>
+    suspend fun loginWithGoogle(idToken: String, email: String, displayName: String, photoUrl: String?): Result<Unit, DataError>
 
     // Visit Code Management (OTP)
     suspend fun generateVisitCode(
@@ -29,4 +30,5 @@ interface IdentityRepository {
 
     // For hospital staff to verify patient
     suspend fun markVisitCodeAsUsed(code: String): Result<Unit, DataError>
+
 }

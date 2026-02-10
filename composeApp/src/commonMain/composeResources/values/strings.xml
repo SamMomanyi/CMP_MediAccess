@@ -21,4 +21,53 @@
     <string name="error_session_expired">Session expired. Please login again.</string>
 
     <string name="error_unknown">An unexpected error occurred.</string>
+
+    <string name="back">Back</string>
+    <string name="registration_title">Registration</string>
+    <string name="registration_subtitle">Setup your account in Seconds</string>
+    <string name="first_name_hint">Firstname</string>
+    <string name="last_name_hint">Lastname</string>
+    <string name="phone_label">Phone</string>
+    <string name="phone_recommendation">We recommend using your active phone number</string>
+    <string name="phone_placeholder">712345678</string>
+    <string name="verify">Verify</string>
+    <string name="email_label">Email</string>
+    <string name="email_recommendation">We recommend using your personal email</string>
+    <string name="email_placeholder">example@email.com</string>
+    <string name="password_label">Create your Password </string>
+    <string name="password_case_sensitive">(Case Sensitive)</string>
+    <string name="password_hint">Password</string>
+    <string name="password_strength">Password Strength</string>
+    <string name="confirm_password_label">Confirm Password</string>
+    <string name="agree_to_terms">I Agree to the </string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="and_text"> and </string>
+    <string name="terms_of_use">terms of use</string>
+    <string name="register_button">Register</string>
+    <string name="powered_by">Powered by </string>
+    <string name="login_login_prompt">Please log in to view records</string>
+
+    <string name="login_title">Login</string>
+    <string name="login_subtitle">Experience Convenience at your fingertips</string>
+    <string name="username_label">Username</string>
+    <string name="username_hint">Username / Email</string>
+    <string name="forgot_username">Forgot Username?</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="remember_me">Remember me</string>
+    <string name="login_button">Login</string>
+    <string name="or_divider">OR</string>
+    <string name="login_phone">Login with Phone number</string>
+    <string name="login_google">Proceed with Google</string>
+    <string name="no_account_prompt">Don\'t have an account yet? </string>
+    <string name="register_now">Register now</string>
+
+
+    <string name="welcome_app_name">MediAccess</string>
+    <string name="welcome_tagline">Manage Your Health,\nThe Smart Way</string>
+    <string name="welcome_hero_placeholder">🏥\nHealthcare\nImage Here</string>
+    <string name="welcome_headline">No more waiting</string>
+    <string name="login_button_label">Log In</string>
+    <string name="register_button_label">Register</string>
+    <string name="welcome_logo_content_description">MediAccess Logo</string>
+
 </resources>

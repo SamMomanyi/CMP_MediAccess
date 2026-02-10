@@ -6,6 +6,7 @@ import androidx.compose.ui.window.application
 import org.sammomanyi.mediaccess.app.App
 import org.sammomanyi.mediaccess.di.platformModule
 import org.sammomanyi.mediaccess.di.sharedModule
+import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationScreen
 
 //moved outside application
 
@@ -22,7 +23,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             title = "MediAccess",
         ) {
-            App()
+            VerificationScreen()
         }
     }
 }

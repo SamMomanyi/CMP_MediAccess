@@ -53,6 +53,12 @@ class RegistrationViewModel(
                 )
             }
             RegistrationAction.OnRegisterClick -> register()
+            is RegistrationAction.OnConfirmPasswordChange -> {
+                _state.value = _state.value.copy(
+                    confirmPassword = action.password,
+                    confirmPasswordError = null
+                )
+            }
         }
     }
 

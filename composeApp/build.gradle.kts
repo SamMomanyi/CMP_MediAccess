@@ -41,6 +41,7 @@ buildkonfig {
             "FIREBASE_PROJECT_ID",
             localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""
         )
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "GOOGLE_WEB_CLIENT_ID", project.findProperty("GOOGLE_WEB_CLIENT_ID")?.toString() ?: "")
     }
 }
 kotlin {
@@ -64,6 +65,11 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
             implementation(libs.ktor.client.okhttp)
+            // ... google dependencies ...
+            implementation(libs.google.services.auth)
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play.services)
+            implementation(libs.googleid)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

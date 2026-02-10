@@ -7,10 +7,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.core.domain.util.Result
 import org.sammomanyi.mediaccess.core.presentation.UiText
+import org.sammomanyi.mediaccess.features.identity.domain.use_case.GoogleSignInUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.LoginUserUseCase
 
 class LoginViewModel(
-    private val loginUserUseCase: LoginUserUseCase
+    private val loginUserUseCase: LoginUserUseCase,
+    private val googleSignInUseCase: GoogleSignInUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
@@ -21,7 +23,7 @@ class LoginViewModel(
             is LoginAction.OnEmailChange -> {
                 _state.value = _state.value.copy(
                     email = action.email,
-                    emailError = null // Clear error when user types
+                    emailError = null
                 )
             }
             is LoginAction.OnPasswordChange -> {
@@ -31,11 +33,16 @@ class LoginViewModel(
                 )
             }
             LoginAction.OnLoginClick -> login()
+            is LoginAction.OnGoogleSignIn -> handleGoogleSignIn(
+                action.idToken,
+                action.email,
+                action.displayName,
+                action.photoUrl
+            )
         }
     }
 
     private fun login() {
-        // Client-side validation
         if (!validateInput()) return
 
         viewModelScope.launch {
@@ -48,6 +55,37 @@ class LoginViewModel(
                 email = _state.value.email.trim(),
                 password = _state.value.password
             )
+
+            when (result) {
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        errorMessage = UiText.from(result.error)
+                    )
+                }
+                is Result.Success -> {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        isSuccess = true
+                    )
+                }
+            }
+        }
+    }
+
+    private fun handleGoogleSignIn(
+        idToken: String,
+        email: String,
+        displayName: String,
+        photoUrl: String?
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoading = true,
+                errorMessage = null
+            )
+
+            val result = googleSignInUseCase(idToken, email, displayName, photoUrl)
 
             when (result) {
                 is Result.Error -> {

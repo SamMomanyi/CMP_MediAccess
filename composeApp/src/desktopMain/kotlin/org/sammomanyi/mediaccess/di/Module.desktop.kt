@@ -14,7 +14,13 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.sammomanyi.mediaccess.DesktopIdentityRepositoryImpl
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
+import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopAppointmentRepositoryImpl
+import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopHospitalRepositoryImpl
+import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopRecordsRepositoryImpl
+import org.sammomanyi.mediaccess.features.identity.domain.repository.AppointmentRepository
+import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
+import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
 import java.io.File
 
 actual val platformModule = module {
@@ -43,4 +49,7 @@ actual val platformModule = module {
 
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
+    singleOf(::DesktopRecordsRepositoryImpl).bind<RecordsRepository>()
+    singleOf(::DesktopHospitalRepositoryImpl).bind<HospitalRepository>()
+    singleOf(::DesktopAppointmentRepositoryImpl).bind<AppointmentRepository>()
 }

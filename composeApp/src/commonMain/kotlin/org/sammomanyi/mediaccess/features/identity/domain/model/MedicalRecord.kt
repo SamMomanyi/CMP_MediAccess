@@ -1,15 +1,19 @@
 package org.sammomanyi.mediaccess.features.identity.domain.model
 
-import kotlinx.datetime.Instant
-import kotlin.time.ExperimentalTime
+import kotlinx.serialization.Serializable
 
-
-data class MedicalRecord @OptIn(ExperimentalTime::class) constructor(
-    val id: String,
+@Serializable
+data class MedicalRecord(
+    val id: String = "",
     val patientId: String,
+    val patientName: String,
     val diagnosis: String,
+    val symptoms: String,
     val prescription: String,
     val doctorName: String,
-    val visitDate: Instant,
-    val notes: String
+    val hospital: String,
+    val visitDate: Long,
+    val followUpDate: Long? = null,
+    val notes: String = "",
+    val createdAt: Long = 0L
 )

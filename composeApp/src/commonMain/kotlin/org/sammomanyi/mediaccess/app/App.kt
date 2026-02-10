@@ -1,43 +1,109 @@
 package org.sammomanyi.mediaccess.app
 
-
-
-import androidx.compose.foundation.layout.fillMaxSize
+import GoogleSignInProvider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navigation
-import org.koin.compose.viewmodel.koinViewModel
-import org.sammomanyi.mediaccess.features.identity.presentation.dashboard.DashboardScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.dashboard.DashboardViewModel
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessTheme
+import org.sammomanyi.mediaccess.features.identity.domain.auth.GoogleSignInResult
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationOptionsDialog
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationScreen
-
-
+import org.sammomanyi.mediaccess.features.identity.presentation.welcome.WelcomeScreen
 
 @Composable
 fun App() {
-    MaterialTheme {
+    MediAccessTheme {
         val navController = rememberNavController()
+        //val context = androidx.compose.ui.platform.LocalContext.current
+        val googleSignInProvider: GoogleSignInProvider = koinInject()
+        var showRegistrationOptions by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+
+
+
+        fun handleGoogleRegister() {
+            scope.launch {
+                when (val result = googleSignInProvider.signIn()) {
+                    is GoogleSignInResult.Success -> {
+                        navController.navigate(Route.MainGraph) {
+                            popUpTo(Route.Welcome) { inclusive = true }
+                        }
+                    }
+                    is GoogleSignInResult.Error -> {
+                        println("Google Registration Error: ${result.message}")
+                    }
+                    GoogleSignInResult.Cancelled -> {
+                        println("Google Registration Cancelled")
+                    }
+                }
+            }
+        }
+
+        if (showRegistrationOptions) {
+            RegistrationOptionsDialog(
+                onDismiss = { showRegistrationOptions = false },
+                onEmailRegister = {
+                    showRegistrationOptions = false
+                    navController.navigate(Route.Register)
+                },
+                onGoogleRegister = {
+                    showRegistrationOptions = false
+                    handleGoogleRegister()
+                }
+            )
+        }
+
+        if (showRegistrationOptions) {
+            RegistrationOptionsDialog(
+                onDismiss = { showRegistrationOptions = false },
+                onEmailRegister = {
+                    showRegistrationOptions = false
+                    navController.navigate(Route.Register)
+                },
+                onGoogleRegister = {
+                    showRegistrationOptions = false
+                    // TODO: Implement Google Sign-In
+                }
+            )
+        }
 
         NavHost(
             navController = navController,
-            startDestination = Route.AuthGraph
+            startDestination = Route.Welcome
         ) {
+            // Welcome Screen (Entry Point)
+            composable<Route.Welcome> {
+                WelcomeScreen(
+                    onLoginClick = {
+                        navController.navigate(Route.Login)
+                    },
+                    onRegisterClick = {
+                        showRegistrationOptions = true
+                    }
+                )
+            }
+
             // Authentication Flow
             navigation<Route.AuthGraph>(startDestination = Route.Login) {
                 composable<Route.Login> {
                     LoginScreen(
                         onRegisterClick = {
-                            navController.navigate(Route.Register)
+                            showRegistrationOptions = true
                         },
                         onLoginSuccess = {
                             navController.navigate(Route.MainGraph) {
-                                popUpTo(Route.AuthGraph) { inclusive = true }
+                                popUpTo(Route.Welcome) { inclusive = true }
+                            }
+                        },
+                        onBackClick = {
+                            navController.navigate(Route.Welcome) {
+                                popUpTo(Route.Welcome) { inclusive = true }
                             }
                         }
                     )
@@ -46,48 +112,35 @@ fun App() {
                 composable<Route.Register> {
                     RegistrationScreen(
                         onLoginClick = {
-                            navController.popBackStack() // Go back to Login
+                            navController.popBackStack()
+                            navController.navigate(Route.Login)
                         },
                         onSuccess = {
                             navController.navigate(Route.MainGraph) {
-                                popUpTo(Route.AuthGraph) { inclusive = true }
+                                popUpTo(Route.Welcome) { inclusive = true }
                             }
+                        },
+                        onBackClick = {
+                            navController.popBackStack()
                         }
                     )
                 }
             }
 
-            // Main App Flow (Dashboard/VisitCode)
-            navigation<Route.MainGraph>(startDestination = Route.Dashboard) {
-                composable<Route.Dashboard> {
-                    val viewModel: DashboardViewModel = koinViewModel()
-                    val state by viewModel.state.collectAsStateWithLifecycle()
-
-                    DashboardScreen(
-                        state = state, // Pass the collected state
-                        onGenerateCodeClick = { viewModel.onGenerateVisitCode() }, // Trigger the VM function
-                        onNavigate = { route ->
-                            navController.navigate(route) {
-                                launchSingleTop = true
-                                restoreState = true
+// Main App with Bottom Navigation
+            // FIX: Ensure the composable route matches the startDestination, NOT the graph route
+            navigation<Route.MainGraph>(startDestination = Route.Home) {
+                composable<Route.Home> { // <--- CHANGE THIS from Route.MainGraph
+                    MainScreen(
+                        onLogout = {
+                            navController.navigate(Route.Welcome) {
+                                // Clear the entire stack including the MainGraph
+                                popUpTo(Route.MainGraph) { inclusive = true }
                             }
                         }
                     )
                 }
-
-// Simple placeholders to prevent "Unresolved reference" errors
-                composable<Route.Records> { PlaceholderScreen("Medical Records") }
-                composable<Route.Hospitals> { PlaceholderScreen("Nearby Hospitals") }
-                composable<Route.Profile> { PlaceholderScreen("User Profile") }
-
             }
-
-            @Composable
-            fun PlaceholderScreen(title: String) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    androidx.compose.material3.Text(title, style = MaterialTheme.typography.headlineMedium)
-                }
-            }
+        }
+    }
+}

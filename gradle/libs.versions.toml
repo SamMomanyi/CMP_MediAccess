@@ -49,6 +49,11 @@ animationCoreAndroid = "1.10.0"
 # GitLive Firebase SDK
 firebase-kotlin = "2.1.0"
 
+# ... Google versions ...
+googleServicesAuth = "21.2.0"
+credentials = "1.2.2"
+googleid = "1.1.1"
+
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
@@ -119,6 +124,12 @@ firebase-storage = { module = "dev.gitlive:firebase-storage", version.ref = "fir
 # In libs.versions.toml
 # Use the 'material3' set if you are using Material3, or 'material' for standard
 compose-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.1" }
+
+# ... Google libraries ...
+google-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "googleServicesAuth" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play-services = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 
 [plugins]

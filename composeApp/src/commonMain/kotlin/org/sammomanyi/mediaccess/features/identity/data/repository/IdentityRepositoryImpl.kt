@@ -139,6 +139,78 @@ class IdentityRepositoryImpl(
         }
     }
 
+    override suspend fun loginWithGoogle(
+        idToken: String,
+        email: String,
+        displayName: String,
+        photoUrl: String?
+    ): Result<Unit, DataError> {
+        return try {
+            println("🔵 Starting Google Sign-In with Firebase")
+
+            // Firebase auth is already done in GoogleSignInHelper
+            // Just get the current user
+            val uid = firebaseAuth.currentUser?.uid
+
+            if (uid == null) {
+                println("🔴 No current user after Google Sign-In")
+                return Result.Error(DataError.Auth.INVALID_CREDENTIALS)
+            }
+
+            println("🔵 Got UID: $uid")
+
+            // Check if user exists in Firestore
+            val userSnapshot = firestore.collection("users").document(uid).get()
+
+            if (userSnapshot.exists) {
+                println("🔵 User exists in Firestore, loading profile")
+                // User exists, load their profile
+                val user = userSnapshot.data<User>()
+                userDao.upsertUser(user.toEntity())
+            } else {
+                println("🔵 New Google user, creating profile")
+                // New user, create profile
+                val names = displayName.split(" ", limit = 2)
+                val firstName = names.getOrNull(0) ?: "User"
+                val lastName = names.getOrNull(1) ?: ""
+
+                val newUser = User(
+                    id = uid,
+                    firstName = firstName,
+                    lastName = lastName,
+                    email = email,
+                    phoneNumber = "", // Can be added later
+                    dateOfBirth = "2000-01-01",
+                    gender = "PREFER_NOT_TO_SAY",
+                    role = "PATIENT",
+                    medicalId = generateMedicalId(),
+                    profileImageUrl = photoUrl,
+                    isEmailVerified = true, // Google accounts are pre-verified
+                    createdAt = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+                )
+
+                // Save to Firestore
+                firestore.collection("users").document(uid).set(newUser)
+
+                // Save locally
+                userDao.upsertUser(newUser.toEntity())
+            }
+
+            println("🟢 Google Sign-In completed successfully")
+            Result.Success(Unit)
+
+        } catch (e: Exception) {
+            println("🔴 Google Sign-In error: ${e.message}")
+            e.printStackTrace()
+            Result.Error(DataError.Network.SERVER_ERROR)
+        }
+    }
+
+    private fun generateMedicalId(): String {
+        val timestamp = System.currentTimeMillis().toString().takeLast(6)
+        return "MED-$timestamp"
+    }
+
     @OptIn(ExperimentalTime::class)
     override suspend fun generateVisitCode(
         userId: String,

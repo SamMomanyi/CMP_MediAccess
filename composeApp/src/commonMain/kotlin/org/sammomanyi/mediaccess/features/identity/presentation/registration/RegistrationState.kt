@@ -19,5 +19,6 @@ data class RegistrationState(
     val lastNameError: UiText? = null,
     val emailError: UiText? = null,
     val phoneError: UiText? = null,
-    val passwordError: UiText? = null
+    val passwordError: UiText? = null,
+    val confirmPasswordError: UiText? = null
 )

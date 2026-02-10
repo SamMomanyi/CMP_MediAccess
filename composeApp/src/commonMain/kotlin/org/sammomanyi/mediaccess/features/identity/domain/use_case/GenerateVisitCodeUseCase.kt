@@ -1,5 +1,6 @@
 import kotlinx.coroutines.flow.Flow
 import org.sammomanyi.mediaccess.core.domain.util.DataError
+import org.sammomanyi.mediaccess.core.domain.util.Result
 import org.sammomanyi.mediaccess.features.identity.domain.model.User
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitCode
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
@@ -12,7 +13,11 @@ class GenerateVisitCodeUseCase(
     suspend operator fun invoke(
         userId: String,
         purpose: VisitPurpose = VisitPurpose.GENERAL_VISIT
-    ): org.sammomanyi.mediaccess.core.domain.util.Result<VisitCode, DataError> {
+    ): Result<VisitCode, DataError> {
+        if (userId.isBlank()) {
+            return Result.Error(DataError.Validation.EMPTY_FIELD)
+        }
+
         return repository.generateVisitCode(userId, purpose)
     }
 }

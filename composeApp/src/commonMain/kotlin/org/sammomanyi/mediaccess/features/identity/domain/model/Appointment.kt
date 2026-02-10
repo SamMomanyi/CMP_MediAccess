@@ -1,20 +1,30 @@
 package org.sammomanyi.mediaccess.features.identity.domain.model
 
-import kotlinx.datetime.Instant
-import kotlin.time.ExperimentalTime
+import kotlinx.serialization.Serializable
 
-
-data class Appointment @OptIn(ExperimentalTime::class) constructor(
-    val id: String,
+@Serializable
+data class Appointment(
+    val id: String = "",
     val patientId: String,
-    val doctorName: String,
-    val department: String,
-    val dateTime: Instant,
-    val status: AppointmentStatus
+    val patientName: String,
+    val patientMedicalId: String,
+    val hospitalId: String,
+    val hospitalName: String,
+    val visitCode: String,
+    val purpose: String,
+    val scheduledDate: Long,
+    val status: AppointmentStatus,
+    val verifiedAt: Long? = null,
+    val verifiedBy: String? = null,
+    val createdAt: Long
 )
 
-
-
+@Serializable
 enum class AppointmentStatus {
-    SCHEDULED, COMPLETED, CANCELLED, NO_SHOW
+    PENDING,
+    VERIFIED,
+    COMPLETED,
+    CANCELLED,
+    NO_SHOW
 }
+
