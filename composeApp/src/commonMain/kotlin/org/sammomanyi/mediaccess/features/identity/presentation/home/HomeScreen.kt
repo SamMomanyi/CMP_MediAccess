@@ -5,12 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.pulltorefresh.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,7 +25,7 @@ import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 import org.sammomanyi.mediaccess.features.identity.domain.model.Article
 import org.sammomanyi.mediaccess.features.identity.presentation.home.dialogs.*
 
-@OptIn(ExperimentalMaterialApi::class)
+
 @Composable
 fun HomeScreen(
     padding: PaddingValues,
@@ -49,15 +46,13 @@ fun HomeScreen(
     var showLinkCoverDialog by remember { mutableStateOf(false) }
 
     // Pull to refresh
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = state.isRefreshing,
-        onRefresh = { viewModel.onAction(HomeAction.OnRefresh) }
-    )
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pullRefresh(pullRefreshState)
+    PullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = { viewModel.onAction(HomeAction.OnRefresh) },
+        state = pullToRefreshState,
+        modifier = Modifier.fillMaxSize()
     ) {
         LazyColumn(
             modifier = Modifier
@@ -112,13 +107,6 @@ fun HomeScreen(
             }
         }
 
-        PullRefreshIndicator(
-            refreshing = state.isRefreshing,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = Color.White,
-            contentColor = MediAccessColors.Primary
-        )
     }
 
     // All Dialogs

@@ -1,7 +1,6 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.more
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -19,8 +18,12 @@ import androidx.compose.ui.unit.dp
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 
 @Composable
-fun MoreScreen(padding: PaddingValues) {
+fun MoreScreen(
+    padding: PaddingValues,
+    onLogout: () -> Unit
+) {
     var biometricsEnabled by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = Modifier
@@ -33,7 +36,7 @@ fun MoreScreen(padding: PaddingValues) {
             MoreHeader()
         }
 
-        // Biometrics Login
+        // Biometrics
         item {
             BiometricsToggle(
                 enabled = biometricsEnabled,
@@ -41,105 +44,74 @@ fun MoreScreen(padding: PaddingValues) {
             )
         }
 
-        // Share Section
+        // Share
         item {
             SectionHeader("Share")
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Share,
                 title = "Tell a Friend",
-                onClick = { /* Share */ }
+                onClick = { }
             )
         }
 
-        // Rate Section
+        // Rate
         item {
             SectionHeader("Rate")
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Star,
                 title = "Rate Us",
-                onClick = { /* Rate */ }
+                onClick = { }
             )
         }
 
-        // My Dawa Section
-        item {
-            SectionHeader("My Dawa")
-        }
-
-        item {
-            MoreMenuItem(
-                icon = null,
-                title = "Register to Mzima Program",
-                iconPlaceholder = "MZIMA",
-                onClick = { /* Mzima */ }
-            )
-        }
-
-        item {
-            MoreMenuItem(
-                icon = null,
-                title = "About Mzima Program",
-                iconPlaceholder = "MZIMA",
-                onClick = { /* About Mzima */ }
-            )
-        }
-
-        // Help Section
+        // Help
         item {
             SectionHeader("Help")
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Help,
                 title = "Support",
-                onClick = { /* Support */ }
+                onClick = { }
             )
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.QuestionAnswer,
                 title = "Frequently Asked Questions",
-                onClick = { /* FAQ */ }
+                onClick = { }
             )
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Phone,
                 title = "Contact Us",
-                onClick = { /* Contact */ }
+                onClick = { }
             )
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Search,
                 title = "About Us",
-                onClick = { /* About */ }
+                onClick = { }
             )
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Shield,
                 title = "T&C And Privacy Policy",
-                onClick = { /* T&C */ }
+                onClick = { }
             )
         }
 
-        // Version Section
+        // Version
         item {
             SectionHeader("Version")
         }
-
         item {
             MoreMenuItem(
                 icon = Icons.Default.Tag,
@@ -148,29 +120,59 @@ fun MoreScreen(padding: PaddingValues) {
             )
         }
 
+        // Logout
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MediAccessColors.Secondary
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.ExitToApp, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Logout",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
         item {
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
-    // Floating Menu Button
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = padding.calculateBottomPadding() + 16.dp, end = 16.dp),
-        contentAlignment = Alignment.BottomEnd
-    ) {
-        FloatingActionButton(
-            onClick = { /* Menu */ },
-            containerColor = MediAccessColors.Secondary,
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Icon(
-                Icons.Default.Menu,
-                contentDescription = "Menu",
-                tint = Color.White
-            )
-        }
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to logout?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MediAccessColors.Secondary
+                    )
+                ) {
+                    Text("Logout")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -195,7 +197,7 @@ private fun MoreHeader() {
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "SA",
+                            text = "MA",
                             style = MaterialTheme.typography.titleSmall,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -204,8 +206,8 @@ private fun MoreHeader() {
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Smart\nACCESS",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = "MediAccess",
+                    style = MaterialTheme.typography.titleMedium,
                     color = MediAccessColors.Secondary,
                     fontWeight = FontWeight.Bold
                 )
@@ -252,9 +254,7 @@ private fun BiometricsToggle(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Fingerprint,
                     contentDescription = null,
@@ -299,9 +299,8 @@ private fun SectionHeader(title: String) {
 
 @Composable
 private fun MoreMenuItem(
-    icon: ImageVector?,
+    icon: ImageVector,
     title: String,
-    iconPlaceholder: String? = null,
     onClick: () -> Unit
 ) {
     Surface(
@@ -318,29 +317,11 @@ private fun MoreMenuItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (icon != null) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MediAccessColors.TextPrimary
-                )
-            } else if (iconPlaceholder != null) {
-                // Placeholder for Mzima logo
-                Surface(
-                    modifier = Modifier.size(24.dp),
-                    shape = RoundedCornerShape(4.dp),
-                    color = MediAccessColors.Secondary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "M",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MediAccessColors.TextPrimary
+            )
 
             Spacer(modifier = Modifier.width(16.dp))
 

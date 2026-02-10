@@ -10,6 +10,7 @@ sealed interface Route {
     @Serializable object RegistrationOptions : Route
 
     @Serializable object MainGraph : Route
+    @Serializable object Dashboard : Route
     @Serializable object Home : Route
 
     @Serializable data object Care : Route      // Renamed from Hospitals

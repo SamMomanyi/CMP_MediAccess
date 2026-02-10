@@ -1,8 +1,12 @@
 package org.sammomanyi.mediaccess.app
 
 import GoogleSignInProvider
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
@@ -129,15 +133,16 @@ fun App() {
 
 // Main App with Bottom Navigation
             // FIX: Ensure the composable route matches the startDestination, NOT the graph route
-            navigation<Route.MainGraph>(startDestination = Route.Home) {
-                composable<Route.Home> { // <--- CHANGE THIS from Route.MainGraph
+// In App.kt
+            navigation<Route.MainGraph>(startDestination = Route.Dashboard) {
+                composable<Route.Dashboard> {
                     MainScreen(
                         onLogout = {
                             navController.navigate(Route.Welcome) {
-                                // Clear the entire stack including the MainGraph
                                 popUpTo(Route.MainGraph) { inclusive = true }
                             }
-                        }
+                        },
+                        // Fix your padding here as well
                     )
                 }
             }

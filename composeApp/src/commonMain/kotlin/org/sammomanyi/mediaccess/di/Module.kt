@@ -64,19 +64,16 @@ val firebaseOptions = FirebaseOptions(
 )
 
 val sharedModule = module {
-    // 1. Database & Dao
-    // We use get() here because Room initialization involves complex builders
-    single {
-        getRoomDatabase(get<RoomDatabase.Builder<MediAccessDatabase>>())
-    }
-
+    // 1. Core Services (Networking & DB)
+    single { getRoomDatabase(get<RoomDatabase.Builder<MediAccessDatabase>>()) }
 
     single {
         HttpClient {
             install(ContentNegotiation) {
                 json(Json {
-                    ignoreUnknownKeys = true // CRITICAL: So the app doesn't crash on extra API data
+                    ignoreUnknownKeys = true
                     isLenient = true
+                    coerceInputValues = true // Useful for handling nulls from the News API
                 })
             }
         }
@@ -84,56 +81,44 @@ val sharedModule = module {
 
     single { NewsService(get()) }
 
+    // 2. DAOs
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
     single { get<MediAccessDatabase>().hospitalDao }
     single { get<MediAccessDatabase>().appointmentDao }
 
-
-    // 2. Repositories (Add the implementation here if not in platformModule)
+    // 3. Repositories
     singleOf(::HospitalRepositoryImpl).bind<HospitalRepository>()
     singleOf(::RecordsRepositoryImpl).bind<RecordsRepository>()
     singleOf(::AppointmentRepositoryImpl).bind<AppointmentRepository>()
     singleOf(::IdentityRepositoryImpl).bind<IdentityRepository>()
 
-    // 3. Firebase Services
+    // 4. Firebase Services
     single { Firebase.auth }
     single { Firebase.firestore }
-    single { NewsService(get()) }
 
-    // 4. Using singleOf and bind for the Repository
-    // This matches: singleOf(::KtorRemoteBookDataSource).bind<RemoteBookDataSource>()
-    // Repository moved to platformModule
-    // singleOf(::IdentityRepositoryImpl).bind<IdentityRepository>() // REMOVE THIS LINE
-
-    // 5. Use Cases
+    // 5. Use Cases (Cleaned duplicates)
     singleOf(::RegisterUserUseCase)
     singleOf(::LoginUserUseCase)
+    singleOf(::GoogleSignInUseCase)
     singleOf(::GetProfileUseCase)
     singleOf(::GenerateVisitCodeUseCase)
     singleOf(::GetRecordsUseCase)
     singleOf(::LogoutUseCase)
     singleOf(::SyncRecordsUseCase)
-    singleOf(::GetHospitalsUseCase) // ADD THIS LINE
+    singleOf(::GetHospitalsUseCase)
     singleOf(::GetCurrentUserUseCase)
     singleOf(::SyncHospitalsUseCase)
     singleOf(::VerifyVisitCodeUseCase)
     singleOf(::BookAppointmentUseCase)
-    // Use Cases
-    singleOf(::RegisterUserUseCase)
-    singleOf(::LoginUserUseCase)
-    singleOf(::GoogleSignInUseCase)  // ADD THIS
-    singleOf(::GetProfileUseCase)
-    // 6. ViewModels using viewModelOf
-    // This is much cleaner and avoids multiple get() calls
+
+    // 6. ViewModels
     viewModelOf(::LoginViewModel)
     viewModelOf(::RegistrationViewModel)
     viewModelOf(::HomeViewModel)
     viewModelOf(::RecordsViewModel)
     viewModelOf(::HospitalsViewModel)
     viewModelOf(::ProfileViewModel)
-    viewModelOf(::CareViewModel)  // ADD THIS
+    viewModelOf(::CareViewModel)
     viewModelOf(::PersonalViewModel)
 }
-
-
