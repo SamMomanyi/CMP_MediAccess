@@ -33,12 +33,10 @@ fun LinkCoverScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
-    var insuranceExpanded by remember { mutableStateOf(false) }
 
+    // ── Navigate to success when done ──
     LaunchedEffect(state.isSuccess) {
-        if (state.isSuccess) {
-            onLinkSuccess()
-        }
+        if (state.isSuccess) onLinkSuccess()
     }
 
     Scaffold(
@@ -50,22 +48,22 @@ fun LinkCoverScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = AppColors.textPrimary
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             "Back",
-                            color = AppColors.textPrimary,
+                            color = MaterialTheme.colorScheme.onBackground,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppColors.screenBackground
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = AppColors.screenBackground
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -79,12 +77,12 @@ fun LinkCoverScreen(
                     text = "Setup Account",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.textPrimary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // ──────────────── Stepper ────────────────
+                // ── Stepper ──
                 ThemeStepper(
                     activeStep = state.activeTab,
                     onStepClick = { viewModel.onAction(LinkCoverAction.ChangeTab(it)) }
@@ -92,79 +90,77 @@ fun LinkCoverScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // ──────────────── Form ────────────────
-
-                // Country (Common)
-                LabelText("Country : *")
-                Spacer(modifier = Modifier.height(8.dp))
-                ReadOnlyTextField(value = state.selectedCountry)
+                // ── Country (shared) ──
+                CountryDropdown(
+                    selected = state.selectedCountry,
+                    onSelected = { viewModel.onAction(LinkCoverAction.SelectCountry(it)) }
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (state.activeTab == 1) {
-                    // === AUTOMATIC ===
+                    // ════════ STEP 1: AUTOMATIC ════════
                     LabelText("Email :")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ReadOnlyTextField(
-                        value = state.userEmail,
-                        icon = Icons.Default.Email,
-                        iconTint = MediAccessColors.Secondary // Red
-                    )
+                    ReadOnlyEmailField(email = state.userEmail)
 
                     Spacer(modifier = Modifier.height(40.dp))
 
-                    PrimaryButton(
-                        text = "Link Account",
-                        onClick = { viewModel.onAction(LinkCoverAction.Submit) },
-                        color = MediAccessColors.Secondary // Red for Action
-                    )
-                } else {
-                    // === MANUAL ===
-                    Text(
-                        "Make a request to the Cover Provider manually for verification.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.textSecondary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    LabelText("Insurance : *")
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Insurance Dropdown
-                    Box {
-                        ReadOnlyTextField(
-                            value = state.selectedInsurance,
-                            placeholder = "select an insurance",
-                            isDropdown = true,
-                            onClick = { insuranceExpanded = true },
-                            hasError = state.error != null && state.selectedInsurance.isEmpty()
-                        )
-                        DropdownMenu(
-                            expanded = insuranceExpanded,
-                            onDismissRequest = { insuranceExpanded = false },
-                            modifier = Modifier.fillMaxWidth(0.88f).background(AppColors.cardBackground)
+                    if (state.isLoading) {
+                        // "Please Wait..." — matches screenshot exactly
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            state.availableInsurances.forEach { provider ->
-                                DropdownMenuItem(
-                                    text = { Text(provider, color = AppColors.textPrimary) },
-                                    onClick = {
-                                        viewModel.onAction(LinkCoverAction.SelectInsurance(provider))
-                                        insuranceExpanded = false
-                                    }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(28.dp),
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    strokeWidth = 3.dp
+                                )
+                                Text(
+                                    text = state.loadingMessage,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                         }
+                    } else {
+                        PrimaryButton(
+                            text = "Link Account",
+                            onClick = { viewModel.onAction(LinkCoverAction.Submit) },
+                            color = MaterialTheme.colorScheme.secondary
+                        )
                     }
+
+                } else {
+                    // ════════ STEP 2: MANUAL ════════
+                    Text(
+                        "Make a request to the Cover Provider manually for verification.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Insurance searchable dropdown
+                    SearchableInsuranceDropdown(
+                        selected = state.selectedInsurance,
+                        insurances = state.availableInsurances,
+                        hasError = state.error != null && state.selectedInsurance.isEmpty(),
+                        onSelected = { viewModel.onAction(LinkCoverAction.SelectInsurance(it)) }
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     LabelText("Email :")
                     Spacer(modifier = Modifier.height(8.dp))
-                    ReadOnlyTextField(
-                        value = state.userEmail,
-                        icon = Icons.Default.Email,
-                        iconTint = MediAccessColors.Secondary
-                    )
+                    ReadOnlyEmailField(email = state.userEmail)
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -174,52 +170,139 @@ fun LinkCoverScreen(
                         value = state.memberNumber,
                         onValueChange = { viewModel.onAction(LinkCoverAction.EnterMemberNumber(it)) },
                         leadingIcon = {
-                            Icon(Icons.Default.CreditCard, null, tint = MediAccessColors.Secondary)
+                            Icon(
+                                Icons.Default.CreditCard,
+                                null,
+                                tint = MaterialTheme.colorScheme.secondary
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
+                        singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedTextColor = AppColors.textPrimary,
-                            unfocusedTextColor = AppColors.textPrimary
+                            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                         )
                     )
 
                     Spacer(modifier = Modifier.height(40.dp))
 
-                    PrimaryButton(
-                        text = "Submit",
-                        onClick = { viewModel.onAction(LinkCoverAction.Submit) },
-                        color = if (state.selectedInsurance.isNotEmpty() && state.memberNumber.isNotEmpty())
-                            MediAccessColors.Secondary else MaterialTheme.colorScheme.outline
-                    )
+                    if (state.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    } else {
+                        PrimaryButton(
+                            text = "Submit",
+                            onClick = { viewModel.onAction(LinkCoverAction.Submit) },
+                            color = if (state.selectedInsurance.isNotEmpty() && state.memberNumber.isNotEmpty())
+                                MaterialTheme.colorScheme.secondary
+                            else MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
 
-                // Error Message
-                if (state.error != null) {
+                // Error message
+                state.error?.let { errorMsg ->
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = state.error!!,
-                        color = MediAccessColors.Error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = errorMsg,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { viewModel.onAction(LinkCoverAction.DismissError) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(50.dp))
             }
+        }
+    }
+}
 
-            // Loading
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(AppColors.screenBackground.copy(alpha = 0.8f))
-                        .clickable(enabled = false) {},
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = MediAccessColors.Secondary)
+// ─────────────────────────────────────────────
+// Country Dropdown
+// ─────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountryDropdown(selected: String, onSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Column {
+        LabelText("Country : *")
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selected,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                COUNTRIES.forEach { country ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                country,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        onClick = {
+                            onSelected(country)
+                            expanded = false
+                        }
+                    )
                 }
             }
         }
@@ -227,7 +310,135 @@ fun LinkCoverScreen(
 }
 
 // ─────────────────────────────────────────────
-// Themed Components
+// Searchable Insurance Dropdown
+// ─────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchableInsuranceDropdown(
+    selected: String,
+    insurances: List<String>,
+    hasError: Boolean,
+    onSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val filtered = remember(searchQuery) {
+        insurances.filter { it.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Column {
+        LabelText("Insurance : *")
+        Spacer(modifier = Modifier.height(8.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded }
+        ) {
+            OutlinedTextField(
+                value = selected.ifBlank { "select an insurance" },
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
+                shape = RoundedCornerShape(8.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = if (selected.isBlank())
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onBackground,
+                    focusedBorderColor = if (hasError)
+                        MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.secondary,
+                    unfocusedBorderColor = if (hasError)
+                        MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.outline
+                )
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                    searchQuery = ""
+                }
+            ) {
+                // Search field inside dropdown
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search Insurance") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true
+                )
+                filtered.forEach { insurer ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                insurer,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        onClick = {
+                            onSelected(insurer)
+                            searchQuery = ""
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// Read-only email field (matches screenshot style)
+// ─────────────────────────────────────────────
+
+@Composable
+private fun ReadOnlyEmailField(email: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Red envelope icon box — matches screenshot
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(6.dp),
+                color = MaterialTheme.colorScheme.secondary
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Email,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// Reusable shared components
 // ─────────────────────────────────────────────
 
 @Composable
@@ -235,41 +446,7 @@ fun LabelText(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
-        color = AppColors.textSecondary
-    )
-}
-
-@Composable
-fun ReadOnlyTextField(
-    value: String,
-    placeholder: String = "",
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    iconTint: Color = AppColors.icon,
-    isDropdown: Boolean = false,
-    onClick: () -> Unit = {},
-    hasError: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        readOnly = true,
-        placeholder = { Text(placeholder, color = AppColors.textSecondary) },
-        leadingIcon = if (icon != null) {
-            { Icon(icon, null, tint = iconTint) }
-        } else null,
-        trailingIcon = if (isDropdown) {
-            { IconButton(onClick = onClick) { Icon(Icons.Default.ArrowDropDown, null, tint = AppColors.icon) } }
-        } else null,
-        modifier = Modifier.fillMaxWidth().clickable(enabled = isDropdown, onClick = onClick),
-        enabled = false, // We handle clicks manually for dropdowns
-        shape = RoundedCornerShape(8.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            disabledTextColor = AppColors.textPrimary,
-            disabledBorderColor = if (hasError) MediAccessColors.Error else MaterialTheme.colorScheme.outline,
-            disabledContainerColor = AppColors.inputBackground, // SurfaceVariant
-            disabledPlaceholderColor = AppColors.textSecondary,
-            disabledLabelColor = AppColors.textPrimary
-        )
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
@@ -277,7 +454,9 @@ fun ReadOnlyTextField(
 fun PrimaryButton(text: String, onClick: () -> Unit, color: Color) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(50.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
         colors = ButtonDefaults.buttonColors(containerColor = color),
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -291,13 +470,15 @@ fun ThemeStepper(activeStep: Int, onStepClick: (Int) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter
     ) {
-        // Line
-        Divider(
-            color = if (activeStep == 2) MediAccessColors.Success else MaterialTheme.colorScheme.outline,
+        HorizontalDivider(
+            color = if (activeStep == 2)
+                Color(0xFF4CAF50)
+            else MaterialTheme.colorScheme.outline,
             thickness = 2.dp,
-            modifier = Modifier.padding(horizontal = 50.dp).padding(top = 16.dp)
+            modifier = Modifier
+                .padding(horizontal = 50.dp)
+                .padding(top = 16.dp)
         )
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -330,33 +511,40 @@ fun StepCircle(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
-            modifier = Modifier.size(34.dp).clickable(onClick = onClick),
+            modifier = Modifier
+                .size(34.dp)
+                .clickable(onClick = onClick),
             shape = CircleShape,
-            // THEME MAPPING:
-            // Completed -> Success (Green)
-            // Active -> Primary (Teal)
-            // Inactive -> Outline (Gray)
             color = when {
-                isCompleted -> MediAccessColors.Success
-                isActive -> MediAccessColors.Primary
+                isCompleted -> Color(0xFF4CAF50)
+                isActive -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.outline
             }
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (isCompleted) {
-                    Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Default.Check,
+                        null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
                 } else {
-                    Text(number, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(
+                        number,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(6.dp))
-
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = if (isActive || isCompleted) MediAccessColors.Primary else AppColors.textSecondary
+            color = if (isActive || isCompleted)
+                MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -2,93 +2,118 @@ package org.sammomanyi.mediaccess.features.identity.presentation.link_cover
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.sammomanyi.mediaccess.core.domain.util.Result
-import org.sammomanyi.mediaccess.features.identity.domain.model.CoverLinkRequest
-import org.sammomanyi.mediaccess.features.identity.domain.model.LinkRequestType
-import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
-
-// UI State
+import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetProfileUseCase
 
 
-// Actions
 
 class LinkCoverViewModel(
-    private val repository: IdentityRepository
+    private val coverRepository: CoverRepository,
+    private val getProfileUseCase: GetProfileUseCase
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(LinkCoverUiState())
+    private val _state = MutableStateFlow(LinkCoverState())
     val state = _state.asStateFlow()
 
     init {
-        loadCurrentUser()
+        loadProfile()
     }
 
-    private fun loadCurrentUser() {
+    private fun loadProfile() {
         viewModelScope.launch {
-            when (val result = repository.getCurrentUser()) {
-                is Result.Success -> {
-                    result.data?.let { user ->
-                        _state.update {
-                            it.copy(userEmail = user.email, userId = user.id)
-                        }
+            getProfileUseCase().collectLatest { user ->
+                user?.let {
+                    _state.update { s ->
+                        s.copy(
+                            userEmail = user.email ?: "",
+                            userId = user.id ?: ""
+                        )
                     }
                 }
-                is Result.Error -> { /* Handle error if needed */ }
             }
         }
     }
 
     fun onAction(action: LinkCoverAction) {
         when (action) {
-            is LinkCoverAction.ChangeTab -> {
-                _state.update { it.copy(activeTab = action.tabIndex, error = null) }
-            }
-            is LinkCoverAction.SelectInsurance -> {
-                _state.update { it.copy(selectedInsurance = action.name) }
-            }
-            is LinkCoverAction.EnterMemberNumber -> {
+            is LinkCoverAction.ChangeTab ->
+                _state.update { it.copy(activeTab = action.tab, error = null) }
+
+            is LinkCoverAction.SelectInsurance ->
+                _state.update { it.copy(selectedInsurance = action.insurance) }
+
+            is LinkCoverAction.EnterMemberNumber ->
                 _state.update { it.copy(memberNumber = action.number) }
-            }
-            LinkCoverAction.ClearError -> {
+
+            is LinkCoverAction.SelectCountry ->
+                _state.update { it.copy(selectedCountry = action.country) }
+
+            LinkCoverAction.DismissError ->
                 _state.update { it.copy(error = null) }
-            }
-            LinkCoverAction.Submit -> submitRequest()
+
+            LinkCoverAction.Submit -> handleSubmit()
         }
     }
 
-    private fun submitRequest() {
-        val currentState = _state.value
+    private fun handleSubmit() {
+        val s = _state.value
 
-        // Validation for Manual Tab
-        if (currentState.activeTab == 2) {
-            if (currentState.selectedInsurance.isBlank()) {
-                _state.update { it.copy(error = "Please select an insurance provider") }
-                return
+        when (s.activeTab) {
+            // ── Step 1: Automatic linkage ──────────────────
+            1 -> {
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(isLoading = true, loadingMessage = "Please Wait...")
+                    }
+                    delay(2500) // Simulate API lookup
+                    // Mock: automatic always fails → advance to manual tab
+                    _state.update {
+                        it.copy(isLoading = false, activeTab = 2)
+                    }
+                }
             }
-            if (currentState.memberNumber.isBlank()) {
-                _state.update { it.copy(error = "Please enter your member number") }
-                return
-            }
-        }
 
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            // ── Step 2: Manual linkage ─────────────────────
+            2 -> {
+                if (s.selectedInsurance.isBlank()) {
+                    _state.update { it.copy(error = "Please select an insurance provider") }
+                    return
+                }
+                if (s.memberNumber.isBlank()) {
+                    _state.update { it.copy(error = "Please enter your member number") }
+                    return
+                }
 
-            val request = CoverLinkRequest(
-                userId = currentState.userId,
-                userEmail = currentState.userEmail,
-                requestType = if (currentState.activeTab == 1) LinkRequestType.AUTOMATIC else LinkRequestType.MANUAL,
-                insuranceProviderName = if (currentState.activeTab == 2) currentState.selectedInsurance else null,
-                memberNumber = if (currentState.activeTab == 2) currentState.memberNumber else null
-            )
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(isLoading = true, loadingMessage = "Submitting request...")
+                    }
 
-            // Submit logic
-            repository.submitCoverLinkRequest(request).collect {
-                _state.update { it.copy(isLoading = false, isSuccess = true) }
+                    val result = coverRepository.submitRequest(
+                        userId = s.userId,
+                        userEmail = s.userEmail,
+                        country = s.selectedCountry,
+                        insuranceName = s.selectedInsurance,
+                        memberNumber = s.memberNumber
+                    )
+
+                    result.fold(
+                        onSuccess = {
+                            _state.update { it.copy(isLoading = false, isSuccess = true) }
+                        },
+                        onFailure = { e ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Failed to submit. Please try again."
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
     }

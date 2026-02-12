@@ -12,9 +12,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
+import org.sammomanyi.mediaccess.features.cover.presentation.CoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.care.CareScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.cover.CoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.notifications.NotificationsScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalScreen
@@ -123,7 +124,10 @@ fun MainScreen(
             }
 
             composable<Route.Cover> {
-                CoverScreen(padding = padding)
+                CoverScreen(
+                    padding = padding,
+                    onNavigateToLinkCover = { navController.navigate(Route.LinkCover) }  // ← ADD
+                )
             }
 
             composable<Route.Personal> {

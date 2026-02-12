@@ -4,6 +4,7 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.identity.data.local.*
 
 @Database(
@@ -22,6 +23,8 @@ abstract class MediAccessDatabase : RoomDatabase() {
     abstract val medicalRecordDao: MedicalRecordDao
     abstract val hospitalDao: HospitalDao
     abstract val appointmentDao: AppointmentDao
+
+    abstract val coverLinkRequestDao: CoverLinkRequestDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

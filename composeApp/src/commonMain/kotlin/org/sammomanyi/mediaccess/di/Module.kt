@@ -48,6 +48,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.SyncRecordsUs
 import org.sammomanyi.mediaccess.features.identity.presentation.care.CareViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.hospitals.HospitalsViewModel
+import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileViewModel
@@ -137,4 +138,6 @@ val sharedModule = module {
     viewModelOf(::CareViewModel)
     viewModelOf(::PersonalViewModel)
     viewModelOf(::WellnessViewModel)
+    // In Module.kt sharedModule, add alongside other viewModels:
+    viewModelOf(::LinkCoverViewModel)
 }

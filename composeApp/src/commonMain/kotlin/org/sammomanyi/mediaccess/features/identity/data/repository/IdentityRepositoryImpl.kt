@@ -19,6 +19,7 @@ import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseAuthException
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.FirebaseFirestoreException
+import jdk.internal.net.http.common.Utils.close
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import org.sammomanyi.mediaccess.features.identity.domain.model.CoverLinkRequest
@@ -419,4 +420,6 @@ class IdentityRepositoryImpl(
             emit(Result.Error(DataError.Network.SERVER_ERROR))
         }
     }
+
+
 }

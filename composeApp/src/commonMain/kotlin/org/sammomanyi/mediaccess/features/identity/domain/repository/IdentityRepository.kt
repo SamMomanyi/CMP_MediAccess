@@ -33,5 +33,6 @@ interface IdentityRepository {
     suspend fun markVisitCodeAsUsed(code: String): Result<Unit, DataError>
 
     suspend fun submitCoverLinkRequest(request: CoverLinkRequest): Flow<Result<Unit, DataError>>
+    // ... inside the interface
 
 }
