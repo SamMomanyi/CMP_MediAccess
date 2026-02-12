@@ -9,6 +9,8 @@ data class User(
     val firstName: String,
     val lastName: String,
     val email: String,
+    val password: String, // Optional for new users
+
     val phoneNumber: String,
 
     // Store as string for Firestore compatibility

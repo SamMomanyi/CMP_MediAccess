@@ -9,6 +9,7 @@ data class UserEntity(
     val firstName: String,
     val lastName: String,
     val email: String,
+    val password: String,
     val phoneNumber: String,
     val dateOfBirth: String, // Store as ISO string: "1990-01-15"
     val gender: String,      // Store enum as string: "MALE", "FEMALE", etc.

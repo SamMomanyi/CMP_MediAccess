@@ -18,6 +18,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.notifications.NotificationsScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalScreen
+import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessScreen
 
 data class BottomNavItem(
     val route: Route,
@@ -52,7 +53,8 @@ fun MainScreen(
                     contentColor = MediAccessColors.Primary
                 ) {
                     bottomNavItems.forEach { item ->
-                        val selected = navBackStackEntry?.destination?.route == item.route::class.qualifiedName
+                        val selected =
+                            navBackStackEntry?.destination?.route == item.route::class.qualifiedName
 
                         NavigationBarItem(
                             selected = selected,
@@ -110,7 +112,8 @@ fun MainScreen(
                     },
                     onNavigateToProfile = {
                         navController.navigate(Route.Personal)
-                    }
+                    },
+                    onNavigateToWellness = { navController.navigate(Route.Wellness) }
                 )
             }
 
@@ -141,6 +144,12 @@ fun MainScreen(
                     onBackClick = {
                         navController.popBackStack()
                     }
+                )
+            }
+
+            composable<Route.Wellness> {
+                WellnessScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
         }

@@ -48,6 +48,15 @@ class DesktopIdentityRepositoryImpl : IdentityRepository {
         TODO("Not yet implemented")
     }
 
+    override suspend fun loginWithGoogle(
+        idToken: String,
+        email: String,
+        displayName: String,
+        photoUrl: String?
+    ): Result<Unit, DataError> {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun generateVisitCode(
         userId: String,
         purpose: VisitPurpose

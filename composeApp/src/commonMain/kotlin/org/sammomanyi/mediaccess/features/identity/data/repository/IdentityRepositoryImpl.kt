@@ -19,6 +19,7 @@ import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.FirebaseAuthException
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.FirebaseFirestoreException
+import kotlinx.coroutines.flow.firstOrNull
 import kotlin.collections.mapOf
 import kotlin.time.ExperimentalTime
 
@@ -38,15 +39,33 @@ class IdentityRepositoryImpl(
         return try {
             val currentUser = firebaseAuth.currentUser
             if (currentUser == null) {
+                // If no Firebase session, check if we have a local user cached
+                // We grab the first emission from your Flow
+                val localUser = userDao.getUser().firstOrNull()
+                if (localUser != null) {
+                    return Result.Success(localUser.toUser())
+                }
                 Result.Success(null)
             } else {
-                val userDoc = firestore.collection("users").document(currentUser.uid).get()
-                if (userDoc.exists) {
-                    val user = userDoc.data<User>()
-                    userDao.upsertUser(user.toEntity())
-                    Result.Success(user)
-                } else {
-                    Result.Error(DataError.Auth.USER_NOT_FOUND)
+// Try to sync with Firestore
+                try {
+                    val userDoc = firestore.collection("users").document(currentUser.uid).get()
+                    if (userDoc.exists) {
+                        val user = userDoc.data<User>()
+                        // Update cache
+                        userDao.upsertUser(user.toEntity())
+                        Result.Success(user)
+                    } else {
+                        Result.Error(DataError.Auth.USER_NOT_FOUND)
+                    }
+                } catch (e: Exception) {
+                    // Network failed? Fallback to local data
+                    val local = userDao.getUser().firstOrNull()
+                    if (local != null && local.id == currentUser.uid) {
+                        Result.Success(local.toUser())
+                    } else {
+                        Result.Error(DataError.Network.NO_INTERNET)
+                    }
                 }
             }
         } catch (e: FirebaseAuthException) {
@@ -88,6 +107,26 @@ class IdentityRepositoryImpl(
     }
 
     override suspend fun login(email: String, password: String): Result<Unit, DataError> {
+        println("🕵️‍♂️ LOGIN ATTEMPT: Checking Local Database for $email...")
+        // 1. Check Local DB First
+        // Since your DAO only has getUser(), we grab the snapshot
+        val localUser = userDao.getUser().firstOrNull()
+
+        if(localUser != null) {
+            println("✅ LOCAL LOGIN SUCCESS!")
+            println("🔐 PASSWORD CHECK: Local '${localUser.password}' vs Input '$password'")
+        // We must check if the locally stored user matches the email AND password
+        // (Assuming your UserEntity stores the password)
+        if (localUser != null && localUser.email == email && localUser.password == password) {
+            println("🎉 OFFLINE LOGIN SUCCESS!")
+            return Result.Success(Unit)
+        }else {
+            println("❌ PASSWORD MISMATCH")
+        } } else{
+            println("❌ NO LOCAL USER FOUND proceed to firebase")
+        }
+
+        // 2. If Local Failed, Try Network
         return try {
             val authResult = firebaseAuth.signInWithEmailAndPassword(email, password)
             val uid = authResult.user?.uid ?: return Result.Error(DataError.Auth.INVALID_CREDENTIALS)
@@ -111,6 +150,7 @@ class IdentityRepositoryImpl(
     override suspend fun logout(): Result<Unit, DataError> {
         return try {
             firebaseAuth.signOut()
+            userDao.clearUser()
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(DataError.Network.SERVER_ERROR)
@@ -179,6 +219,7 @@ class IdentityRepositoryImpl(
                     firstName = firstName,
                     lastName = lastName,
                     email = email,
+                    password =  "", // Google accounts don't have passwords
                     phoneNumber = "", // Can be added later
                     dateOfBirth = "2000-01-01",
                     gender = "PREFER_NOT_TO_SAY",

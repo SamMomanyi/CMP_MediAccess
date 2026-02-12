@@ -53,6 +53,8 @@ import org.sammomanyi.mediaccess.features.identity.presentation.personal.Persona
 import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
+import org.sammomanyi.mediaccess.features.wellness.data.WellnessRepository
+import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessViewModel
 
 // ADD THIS AT THE BOTTOM OF YOUR FILE
 expect val platformModule: Module
@@ -109,7 +111,7 @@ val sharedModule = module {
     // 4. Firebase Services
     single { Firebase.auth }
     single { Firebase.firestore }
-
+    single { WellnessRepository(get()) }
     // 5. Use Cases (Cleaned duplicates)
     singleOf(::RegisterUserUseCase)
     singleOf(::LoginUserUseCase)
@@ -134,4 +136,5 @@ val sharedModule = module {
     viewModelOf(::ProfileViewModel)
     viewModelOf(::CareViewModel)
     viewModelOf(::PersonalViewModel)
+    viewModelOf(::WellnessViewModel)
 }

@@ -12,6 +12,7 @@ fun UserEntity.toUser(): User {
         firstName = firstName,
         lastName = lastName,
         email = email,
+        password = password,
         phoneNumber = phoneNumber,
         dateOfBirth = dateOfBirth, // Already a string
         gender = gender,           // Already a string
@@ -31,6 +32,7 @@ fun User.toEntity(): UserEntity {
         firstName = firstName,
         lastName = lastName,
         email = email,
+        password = password,
         phoneNumber = phoneNumber,
         dateOfBirth = dateOfBirth, // Already a string
         gender = gender,           // Already a string

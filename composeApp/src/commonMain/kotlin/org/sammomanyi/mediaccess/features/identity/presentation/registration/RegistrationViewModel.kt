@@ -79,6 +79,7 @@ class RegistrationViewModel(
                 firstName = _state.value.firstName.trim(),
                 lastName = _state.value.lastName.trim(),
                 email = _state.value.email.trim(),
+                password = state.value.password,
                 phoneNumber = _state.value.phoneNumber.trim(),
                 dateOfBirth = "2000-01-01", // String format
                 gender = Gender.PREFER_NOT_TO_SAY.name, // Enum to string

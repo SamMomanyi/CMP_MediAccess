@@ -1,7 +1,5 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.home
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,9 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +43,7 @@ fun HomeScreen(
     onNavigateToSpent: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToWellness: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -88,9 +90,21 @@ fun HomeScreen(
             }
 
             item {
+// Change WellnessSection's button handler:
                 WellnessSection(
                     onLetsDoItClick = { showWellnessDialog = true }
                 )
+
+// Update the dialog call:
+                if (showWellnessDialog) {
+                    WellnessDialog(
+                        onDismiss = { showWellnessDialog = false },
+                        onGetStarted = {
+                            showWellnessDialog = false
+                            onNavigateToWellness()  // ← new param
+                        }
+                    )
+                }
             }
 
             item {
@@ -107,7 +121,7 @@ fun HomeScreen(
             // Articles section as a single item with internal scroll
             item {
                 // 1. Get the UriHandler (This works on Android and Desktop!)
-                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                val uriHandler = LocalUriHandler.current
 
                 ArticlesSection(
                     articles = state.articles,
@@ -137,7 +151,15 @@ fun HomeScreen(
         )
     }
     if (showWellnessDialog) {
-        WellnessDialog(onDismiss = { showWellnessDialog = false })
+        WellnessDialog(
+            onDismiss = { showWellnessDialog = false },
+            onGetStarted = {
+                // 1. Close the dialog
+                showWellnessDialog = false
+                // 2. Navigate to the new screen
+                onNavigateToWellness()
+            }
+        )
     }
     if (showLinkCoverDialog) {
         LinkCoverDialog(
@@ -440,7 +462,7 @@ private fun WellnessSection(onLetsDoItClick: () -> Unit) {
                         contentColor = MaterialTheme.colorScheme.secondary
                     ),
                     border = ButtonDefaults.outlinedButtonBorder.copy(
-                        brush = androidx.compose.ui.graphics.SolidColor(
+                        brush = SolidColor(
                             MaterialTheme.colorScheme.secondary
                         )
                     )
@@ -735,7 +757,7 @@ private fun ArticleCardLarge(
                         .height(80.dp)
                         .align(Alignment.BottomStart)
                         .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                            Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Transparent,
                                     Color.Black.copy(alpha = 0.6f)

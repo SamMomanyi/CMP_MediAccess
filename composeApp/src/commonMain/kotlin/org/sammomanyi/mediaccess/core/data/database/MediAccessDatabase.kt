@@ -13,7 +13,7 @@ import org.sammomanyi.mediaccess.features.identity.data.local.*
         HospitalEntity::class,
         AppointmentEntity::class
     ],
-    version = 2, // Keep version 2 to handle the new tables
+    version = 3, // Keep version 2 to handle the new tables
     exportSchema = true
 )
 @ConstructedBy(MediAccessDatabaseConstructor::class)

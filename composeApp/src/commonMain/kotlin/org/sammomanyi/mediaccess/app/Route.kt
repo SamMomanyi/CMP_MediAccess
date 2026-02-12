@@ -21,4 +21,5 @@ sealed interface Route {
     // Additional Screens
     @Serializable object Notifications : Route
     @Serializable object Profile : Route
+    @Serializable object Wellness : Route
 }

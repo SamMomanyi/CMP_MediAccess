@@ -31,6 +31,11 @@ actual val platformModule = module {
     single<RoomDatabase.Builder<MediAccessDatabase>> {
         val context = androidContext()
         val dbFile = context.getDatabasePath("mediaccess.db")
+
+        if (!dbFile.parentFile.exists()) {
+            dbFile.parentFile.mkdirs()
+        }
+
         Room.databaseBuilder<MediAccessDatabase>(
             context = context,
             name = dbFile.absolutePath
