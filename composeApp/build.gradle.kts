@@ -86,6 +86,10 @@ kotlin {
             // --- Compass Autocomplete ---
             implementation(libs.compass.autocomplete)
             implementation(libs.compass.autocomplete.mobile)
+
+            // ...coil dependecies ...
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.okhttp) // ← THIS is what was missing
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -103,7 +107,7 @@ kotlin {
             // CRITICAL: Room KMP Runtime must be here for imports to work
             implementation(libs.androidx.room.runtime)
             implementation(libs.sqlite.bundled)
-
+            implementation(libs.androidx.datastore.preferences)
             //koin
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)

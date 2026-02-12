@@ -15,13 +15,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
+import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 
 @Composable
 fun MoreScreen(
     padding: PaddingValues,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    themeViewModel: ThemeViewModel = koinViewModel()
 ) {
+
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
     var biometricsEnabled by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -36,6 +42,15 @@ fun MoreScreen(
             MoreHeader()
         }
 
+        // Theme Toggle
+        item { SectionHeader("Appearance") }
+
+        item {
+            ThemeToggle(
+                isDarkMode = isDarkMode,
+                onToggle = { themeViewModel.toggleTheme() }
+            )
+        }
         // Biometrics
         item {
             BiometricsToggle(
@@ -336,6 +351,60 @@ private fun MoreMenuItem(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = MediAccessColors.TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun ThemeToggle(
+    isDarkMode: Boolean,
+    onToggle: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = if (isDarkMode) "Dark Mode" else "Light Mode",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (isDarkMode) "Switch to light theme" else "Switch to dark theme",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Switch(
+                checked = isDarkMode,
+                onCheckedChange = { onToggle() },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.secondary,
+                    checkedTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
         }
     }

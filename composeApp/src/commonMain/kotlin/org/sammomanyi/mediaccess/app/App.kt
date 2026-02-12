@@ -7,13 +7,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessTheme
+import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.identity.domain.auth.GoogleSignInResult
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationOptionsDialog
@@ -22,7 +25,12 @@ import org.sammomanyi.mediaccess.features.identity.presentation.welcome.WelcomeS
 
 @Composable
 fun App() {
-    MediAccessTheme {
+
+    // Observe theme from ViewModel
+    val themeViewModel: ThemeViewModel = koinViewModel()
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
+
+    MediAccessTheme(darkTheme = isDarkMode) {
         val navController = rememberNavController()
         //val context = androidx.compose.ui.platform.LocalContext.current
         val googleSignInProvider: GoogleSignInProvider = koinInject()

@@ -9,6 +9,7 @@ import dev.gitlive.firebase.FirebaseOptions
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
@@ -21,6 +22,9 @@ import org.koin.dsl.bind
 import org.sammomanyi.mediaccess.BuildKonfig
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
 import org.sammomanyi.mediaccess.core.data.database.getRoomDatabase
+import org.sammomanyi.mediaccess.core.data.preferences.ThemeRepository
+import org.sammomanyi.mediaccess.core.data.preferences.createDataStore
+import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
 import org.sammomanyi.mediaccess.features.identity.data.repository.AppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.HospitalRepositoryImpl
@@ -67,6 +71,11 @@ val sharedModule = module {
     // 1. Core Services (Networking & DB)
     single { getRoomDatabase(get<RoomDatabase.Builder<MediAccessDatabase>>()) }
 
+    // DataStore & Theme
+    single { createDataStore() }
+    single { ThemeRepository(get()) }
+    viewModelOf(::ThemeViewModel)
+
     single {
         HttpClient {
             install(ContentNegotiation) {
@@ -75,6 +84,10 @@ val sharedModule = module {
                     isLenient = true
                     coerceInputValues = true // Useful for handling nulls from the News API
                 })
+            }
+            install(HttpTimeout){
+                requestTimeoutMillis = 15000L
+                connectTimeoutMillis = 10000L
             }
         }
     }
