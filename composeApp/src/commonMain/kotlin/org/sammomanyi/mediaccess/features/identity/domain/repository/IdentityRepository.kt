@@ -3,6 +3,7 @@ package org.sammomanyi.mediaccess.features.identity.domain.repository
 import kotlinx.coroutines.flow.Flow
 import org.sammomanyi.mediaccess.core.domain.util.DataError
 import org.sammomanyi.mediaccess.core.domain.util.Result
+import org.sammomanyi.mediaccess.features.identity.domain.model.CoverLinkRequest
 import org.sammomanyi.mediaccess.features.identity.domain.model.User
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitCode
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
@@ -30,5 +31,7 @@ interface IdentityRepository {
 
     // For hospital staff to verify patient
     suspend fun markVisitCodeAsUsed(code: String): Result<Unit, DataError>
+
+    suspend fun submitCoverLinkRequest(request: CoverLinkRequest): Flow<Result<Unit, DataError>>
 
 }

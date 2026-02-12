@@ -20,7 +20,10 @@ import dev.gitlive.firebase.auth.FirebaseAuthException
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
+import org.sammomanyi.mediaccess.features.identity.domain.model.CoverLinkRequest
 import kotlin.collections.mapOf
+import kotlin.random.Random
 import kotlin.time.ExperimentalTime
 
 class IdentityRepositoryImpl(
@@ -382,6 +385,38 @@ class IdentityRepositoryImpl(
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(DataError.Network.SERVER_ERROR)
+        }
+    }
+
+    // 1. Helper Function to generate a Firestore-like ID
+    private fun generateRandomId(): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        return (1..20)
+            .map { chars[Random.nextInt(chars.length)] }
+            .joinToString("")
+    }
+
+
+    // 2. Updated Submit Function
+    override suspend fun submitCoverLinkRequest(request: CoverLinkRequest): Flow<Result<Unit, DataError>> = flow {
+        try {
+            // FIX: Generate the ID manually first
+            val newId = generateRandomId()
+
+            // Pass the ID explicitly to document()
+            val newDoc = firestore.collection("cover_link_requests").document(newId)
+
+            val finalRequest = request.copy(
+                id = newId, // Use the generated ID
+                timestamp = kotlinxClock.System.now().toEpochMilliseconds()
+            )
+
+            newDoc.set(finalRequest)
+
+            emit(Result.Success(Unit))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(Result.Error(DataError.Network.SERVER_ERROR))
         }
     }
 }

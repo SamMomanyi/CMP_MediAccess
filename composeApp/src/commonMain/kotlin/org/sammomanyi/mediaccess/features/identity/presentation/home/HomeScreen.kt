@@ -41,6 +41,7 @@ fun HomeScreen(
     onNavigateToHospitals: () -> Unit,
     onNavigateToBenefits: () -> Unit,
     onNavigateToSpent: () -> Unit,
+    onNavigateToLinkCover: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToWellness: () -> Unit,
@@ -79,7 +80,7 @@ fun HomeScreen(
 
             item {
                 MyCoversSection(
-                    onLinkCoverClick = { showLinkCoverDialog = true }
+                    onLinkCoverClick = onNavigateToLinkCover
                 )
             }
 

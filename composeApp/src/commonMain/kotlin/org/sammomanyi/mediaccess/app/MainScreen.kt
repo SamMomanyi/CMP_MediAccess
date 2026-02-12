@@ -113,7 +113,8 @@ fun MainScreen(
                     onNavigateToProfile = {
                         navController.navigate(Route.Personal)
                     },
-                    onNavigateToWellness = { navController.navigate(Route.Wellness) }
+                    onNavigateToWellness = { navController.navigate(Route.Wellness) },
+                    onNavigateToLinkCover = { navController.navigate(Route.LinkCover) }
                 )
             }
 

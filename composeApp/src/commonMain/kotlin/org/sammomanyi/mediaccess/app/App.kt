@@ -18,6 +18,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessTheme
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.identity.domain.auth.GoogleSignInResult
+import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationOptionsDialog
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationScreen
@@ -154,6 +155,17 @@ fun App() {
                     )
                 }
             }
+
+            composable<Route.LinkCover> {
+                LinkCoverScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onLinkSuccess = {
+                        // Success! Go back to home (or wherever you want)
+                        navController.popBackStack()
+                    }
+                )
+            }
+
         }
     }
 }
