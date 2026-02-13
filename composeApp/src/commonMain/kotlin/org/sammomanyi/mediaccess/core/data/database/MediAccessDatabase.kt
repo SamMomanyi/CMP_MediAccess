@@ -4,7 +4,9 @@ import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
+import androidx.room.migration.Migration
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
+import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestEntity
 import org.sammomanyi.mediaccess.features.identity.data.local.*
 
 @Database(
@@ -12,9 +14,10 @@ import org.sammomanyi.mediaccess.features.identity.data.local.*
         UserEntity::class,
         MedicalRecordEntity::class,
         HospitalEntity::class,
-        AppointmentEntity::class
+        AppointmentEntity::class,
+        CoverLinkRequestEntity::class
     ],
-    version = 3, // Keep version 2 to handle the new tables
+    version = 4, // Keep version 2 to handle the new tables
     exportSchema = true
 )
 @ConstructedBy(MediAccessDatabaseConstructor::class)
@@ -25,6 +28,8 @@ abstract class MediAccessDatabase : RoomDatabase() {
     abstract val appointmentDao: AppointmentDao
 
     abstract val coverLinkRequestDao: CoverLinkRequestDao
+
+
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

@@ -162,12 +162,7 @@ fun HomeScreen(
             }
         )
     }
-    if (showLinkCoverDialog) {
-        LinkCoverDialog(
-            userEmail = state.user?.email ?: "",
-            onDismiss = { showLinkCoverDialog = false }
-        )
-    }
+
 }
 
 // ─────────────────────────────────────────────

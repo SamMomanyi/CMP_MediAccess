@@ -9,11 +9,14 @@ import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.initialize
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.withOptions
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.sammomanyi.mediaccess.DesktopIdentityRepositoryImpl
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
+import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopAppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopHospitalRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopRecordsRepositoryImpl
@@ -31,6 +34,8 @@ actual val platformModule = module {
         )
     }
 
+
+
     // Stub Firebase Auth - throws error when used
     single<FirebaseAuth> {
         throw UnsupportedOperationException(
@@ -38,6 +43,9 @@ actual val platformModule = module {
                     "Please build and run the Android version for authentication features."
         )
     }
+
+    // ── ADD: cover DAO + repository ──
+    single { get<MediAccessDatabase>().coverLinkRequestDao }
 
     // Stub Firebase Firestore - throws error when used
     single<FirebaseFirestore> {
@@ -47,9 +55,21 @@ actual val platformModule = module {
         )
     }
 
+    // CoverRepository on desktop: no Firestore, pass null or a no-op
+    single {
+        CoverRepository(
+            dao = get(),
+            firestore = null!!   // ← desktop has no Firebase
+        )
+    }
+
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
     singleOf(::DesktopRecordsRepositoryImpl).bind<RecordsRepository>()
     singleOf(::DesktopHospitalRepositoryImpl).bind<HospitalRepository>()
     singleOf(::DesktopAppointmentRepositoryImpl).bind<AppointmentRepository>()
+
+    viewModelOf(::AdminCoverViewModel)
+
+    
 }

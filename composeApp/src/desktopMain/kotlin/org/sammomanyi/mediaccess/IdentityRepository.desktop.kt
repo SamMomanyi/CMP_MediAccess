@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.sammomanyi.mediaccess.core.domain.util.DataError
 import org.sammomanyi.mediaccess.core.domain.util.Result
+import org.sammomanyi.mediaccess.features.identity.domain.model.CoverLinkRequest
 import org.sammomanyi.mediaccess.features.identity.domain.model.User
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitCode
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
@@ -81,6 +82,10 @@ class DesktopIdentityRepositoryImpl : IdentityRepository {
     }
 
     override suspend fun markVisitCodeAsUsed(code: String): Result<Unit, DataError> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun submitCoverLinkRequest(request: CoverLinkRequest): Flow<Result<Unit, DataError>> {
         TODO("Not yet implemented")
     }
 }

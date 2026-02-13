@@ -72,19 +72,6 @@ fun App() {
             )
         }
 
-        if (showRegistrationOptions) {
-            RegistrationOptionsDialog(
-                onDismiss = { showRegistrationOptions = false },
-                onEmailRegister = {
-                    showRegistrationOptions = false
-                    navController.navigate(Route.Register)
-                },
-                onGoogleRegister = {
-                    showRegistrationOptions = false
-                    // TODO: Implement Google Sign-In
-                }
-            )
-        }
 
         NavHost(
             navController = navController,
@@ -151,18 +138,19 @@ fun App() {
                                 popUpTo(Route.MainGraph) { inclusive = true }
                             }
                         },
-                        // Fix your padding here as well
+                        // ✅ Pass LinkCover navigation into MainScreen
+                        onNavigateToLinkCover = {
+                            navController.navigate(Route.LinkCover)
+                        }
                     )
                 }
             }
 
+            // ✅ LinkCover is a full screen OUTSIDE the bottom nav graph
             composable<Route.LinkCover> {
                 LinkCoverScreen(
                     onBackClick = { navController.popBackStack() },
-                    onLinkSuccess = {
-                        // Success! Go back to home (or wherever you want)
-                        navController.popBackStack()
-                    }
+                    onLinkSuccess = { navController.popBackStack() }
                 )
             }
 

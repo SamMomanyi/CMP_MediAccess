@@ -29,7 +29,8 @@ data class BottomNavItem(
 
 @Composable
 fun MainScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToLinkCover: () -> Unit
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -115,7 +116,7 @@ fun MainScreen(
                         navController.navigate(Route.Personal)
                     },
                     onNavigateToWellness = { navController.navigate(Route.Wellness) },
-                    onNavigateToLinkCover = { navController.navigate(Route.LinkCover) }
+                    onNavigateToLinkCover = onNavigateToLinkCover
                 )
             }
 
@@ -157,6 +158,17 @@ fun MainScreen(
                     onBackClick = { navController.popBackStack() }
                 )
             }
+
+            // In your NavHost inside MainScreen, pass it to CoverScreen:
+            composable<Route.Cover> {
+                CoverScreen(
+                    padding = padding,
+                    onNavigateToLinkCover = onNavigateToLinkCover   // ← THREAD THROUGH
+                )
+            }
+
+            // Also wire it from HomeScreen's "Link Cover" quick action button:
+
         }
     }
 }

@@ -25,6 +25,8 @@ import org.sammomanyi.mediaccess.core.data.database.getRoomDatabase
 import org.sammomanyi.mediaccess.core.data.preferences.ThemeRepository
 import org.sammomanyi.mediaccess.core.data.preferences.createDataStore
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
+import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
+import org.sammomanyi.mediaccess.features.cover.presentation.CoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
 import org.sammomanyi.mediaccess.features.identity.data.repository.AppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.HospitalRepositoryImpl
@@ -54,6 +56,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.personal.Persona
 import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
+import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationViewModel
 import org.sammomanyi.mediaccess.features.wellness.data.WellnessRepository
 import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessViewModel
 
@@ -140,4 +143,10 @@ val sharedModule = module {
     viewModelOf(::WellnessViewModel)
     // In Module.kt sharedModule, add alongside other viewModels:
     viewModelOf(::LinkCoverViewModel)
+    // ✅ FIX: Add CoverViewModel here
+    viewModelOf(::CoverViewModel)
+    // In Module.kt sharedModule
+    viewModelOf(::AdminCoverViewModel)
+    viewModelOf(::VerificationViewModel)
+
 }
