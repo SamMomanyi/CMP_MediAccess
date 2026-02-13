@@ -1,9 +1,8 @@
 package org.sammomanyi.mediaccess.features.cover.data
 
-import com.google.firebase.firestore.FirebaseFirestore
+import dev.gitlive.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.tasks.await
 import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestEntity
@@ -48,11 +47,10 @@ class CoverRepository(
             // Save locally first
             dao.upsert(entity)
 
-            // Sync to Firestore
+            // Sync to Firestore — gitlive suspend functions need no .await()
             firestore.collection("cover_requests")
                 .document(request.id)
                 .set(entity.toFirestoreMap())
-                .await()
 
             Result.success(request)
         } catch (e: Exception) {
@@ -61,7 +59,7 @@ class CoverRepository(
         }
     }
 
-    // ── Admin: get all requests (desktop) ─────────────────────
+    // ── Admin: get all requests ───────────────────────────────
 
     fun getAllRequests(): Flow<List<CoverLinkRequest>> =
         dao.getAllRequests().map { list -> list.map { it.toDomain() } }
@@ -86,15 +84,14 @@ class CoverRepository(
             val now = Clock.System.now().toEpochMilliseconds()
             dao.updateStatus(id, status.name, now, note)
 
+            // gitlive update takes vararg Pair<String, Any?>
             firestore.collection("cover_requests")
                 .document(id)
                 .update(
-                    mapOf(
-                        "status" to status.name,
-                        "reviewedAt" to now,
-                        "reviewNote" to note
-                    )
-                ).await()
+                    "status" to status.name,
+                    "reviewedAt" to now,
+                    "reviewNote" to note
+                )
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -106,14 +103,15 @@ class CoverRepository(
 
     suspend fun syncFromFirestore(userId: String) {
         try {
+            // gitlive where clause syntax
             val snapshot = firestore.collection("cover_requests")
-                .whereEqualTo("userId", userId)
+                .where { "userId" equalTo userId }
                 .get()
-                .await()
 
+            // gitlive: doc.data<T>() instead of doc.toObject(T::class.java)
             snapshot.documents.forEach { doc ->
-                val entity = doc.toObject(CoverLinkRequestEntity::class.java)
-                entity?.let { dao.upsert(it) }
+                val entity = doc.data<CoverLinkRequestEntity>()
+                dao.upsert(entity)
             }
         } catch (e: Exception) {
             println("🔴 CoverRepository.sync error: ${e.message}")

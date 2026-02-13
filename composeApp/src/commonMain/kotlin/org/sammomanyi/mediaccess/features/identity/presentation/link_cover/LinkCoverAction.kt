@@ -7,4 +7,5 @@ sealed interface LinkCoverAction {
     data class SelectCountry(val country: String) : LinkCoverAction
     data object Submit : LinkCoverAction
     data object DismissError : LinkCoverAction
+
 }

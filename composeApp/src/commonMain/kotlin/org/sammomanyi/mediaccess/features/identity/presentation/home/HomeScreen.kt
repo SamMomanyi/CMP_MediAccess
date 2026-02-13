@@ -54,7 +54,7 @@ fun HomeScreen(
     var showSpentDialog by remember { mutableStateOf(false) }
     var showQuickActionsDialog by remember { mutableStateOf(false) }
     var showWellnessDialog by remember { mutableStateOf(false) }
-    var showLinkCoverDialog by remember { mutableStateOf(false) }
+
 
     val pullToRefreshState = rememberPullToRefreshState()
 

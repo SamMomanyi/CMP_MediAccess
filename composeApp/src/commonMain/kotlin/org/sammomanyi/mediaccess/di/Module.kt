@@ -25,6 +25,7 @@ import org.sammomanyi.mediaccess.core.data.database.getRoomDatabase
 import org.sammomanyi.mediaccess.core.data.preferences.ThemeRepository
 import org.sammomanyi.mediaccess.core.data.preferences.createDataStore
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
+import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.cover.presentation.CoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
@@ -99,12 +100,15 @@ val sharedModule = module {
     }
 
     single { NewsService(get()) }
+    // Register CoverRepository directly — no Impl needed
+    single { CoverRepository(get(), get()) }
 
     // 2. DAOs
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
     single { get<MediAccessDatabase>().hospitalDao }
     single { get<MediAccessDatabase>().appointmentDao }
+    single { get<MediAccessDatabase>().coverLinkRequestDao }
 
     // 3. Repositories
     singleOf(::HospitalRepositoryImpl).bind<HospitalRepository>()
