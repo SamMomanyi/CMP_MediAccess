@@ -12,7 +12,7 @@ import java.util.UUID
 
 class CoverRepository(
     private val dao: CoverLinkRequestDao,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore?
 ) {
     // ── User: get their own requests ──────────────────────────
 
@@ -85,7 +85,7 @@ class CoverRepository(
             dao.updateStatus(id, status.name, now, note)
 
             // gitlive update takes vararg Pair<String, Any?>
-            firestore.collection("cover_requests")
+            firestore?.collection("cover_requests")
                 ?.document(id)
                 ?.update(
                     "status" to status.name,
@@ -104,12 +104,12 @@ class CoverRepository(
     suspend fun syncFromFirestore(userId: String) {
         try {
             // gitlive where clause syntax
-            val snapshot = firestore.collection("cover_requests")
-                .where { "userId" equalTo userId }
-                .get()
+            val snapshot = firestore?.collection("cover_requests")
+                ?.where { "userId" equalTo userId }
+                ?.get()
 
             // gitlive: doc.data<T>() instead of doc.toObject(T::class.java)
-            snapshot.documents.forEach { doc ->
+            snapshot?.documents?.forEach { doc ->
                 val entity = doc.data<CoverLinkRequestEntity>()
                 dao.upsert(entity)
             }
