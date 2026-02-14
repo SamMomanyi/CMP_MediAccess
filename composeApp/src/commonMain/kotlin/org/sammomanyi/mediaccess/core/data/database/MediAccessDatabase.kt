@@ -15,9 +15,10 @@ import org.sammomanyi.mediaccess.features.identity.data.local.*
         MedicalRecordEntity::class,
         HospitalEntity::class,
         AppointmentEntity::class,
-        CoverLinkRequestEntity::class
+        CoverLinkRequestEntity::class,
+                AdminEntity::class,
     ],
-    version = 4, // Keep version 2 to handle the new tables
+    version = 5, // Keep version 2 to handle the new tables
     exportSchema = true
 )
 @ConstructedBy(MediAccessDatabaseConstructor::class)
@@ -28,7 +29,7 @@ abstract class MediAccessDatabase : RoomDatabase() {
     abstract val appointmentDao: AppointmentDao
 
     abstract val coverLinkRequestDao: CoverLinkRequestDao
-
+    abstract val adminDao: AdminDao
 
 }
 
