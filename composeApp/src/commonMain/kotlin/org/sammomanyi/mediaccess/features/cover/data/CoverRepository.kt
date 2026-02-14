@@ -48,9 +48,9 @@ class CoverRepository(
             dao.upsert(entity)
 
             // Sync to Firestore — gitlive suspend functions need no .await()
-            firestore.collection("cover_requests")
-                .document(request.id)
-                .set(entity.toFirestoreMap())
+            firestore?.collection("cover_requests")
+                ?.document(request.id)
+                ?.set(entity.toFirestoreMap())
 
             Result.success(request)
         } catch (e: Exception) {
@@ -86,8 +86,8 @@ class CoverRepository(
 
             // gitlive update takes vararg Pair<String, Any?>
             firestore.collection("cover_requests")
-                .document(id)
-                .update(
+                ?.document(id)
+                ?.update(
                     "status" to status.name,
                     "reviewedAt" to now,
                     "reviewNote" to note

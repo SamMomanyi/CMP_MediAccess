@@ -15,6 +15,8 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import org.sammomanyi.mediaccess.DesktopIdentityRepositoryImpl
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
+import org.sammomanyi.mediaccess.features.admin.data.AdminRepository
+import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopAppointmentRepositoryImpl
@@ -27,6 +29,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepo
 import java.io.File
 
 actual val platformModule = module {
+
     single<RoomDatabase.Builder<MediAccessDatabase>> {
         val dbFile = File(System.getProperty("java.io.tmpdir"), "mediaccess.db")
         Room.databaseBuilder<MediAccessDatabase>(
@@ -34,6 +37,11 @@ actual val platformModule = module {
         )
     }
 
+
+    single { get<MediAccessDatabase>().adminDao }
+    single { get<MediAccessDatabase>().medicalRecordDao }
+    single { get<MediAccessDatabase>().hospitalDao }
+    single { get<MediAccessDatabase>().appointmentDao }
 
 
     // Stub Firebase Auth - throws error when used
@@ -59,7 +67,7 @@ actual val platformModule = module {
     single {
         CoverRepository(
             dao = get(),
-            firestore = null!!   // ← desktop has no Firebase
+            firestore = null   // no !! needed — it's now nullable
         )
     }
 
@@ -69,7 +77,9 @@ actual val platformModule = module {
     singleOf(::DesktopHospitalRepositoryImpl).bind<HospitalRepository>()
     singleOf(::DesktopAppointmentRepositoryImpl).bind<AppointmentRepository>()
 
+    singleOf(::AdminRepository)
     viewModelOf(::AdminCoverViewModel)
+    viewModelOf(::AdminAuthViewModel)
 
     
 }
