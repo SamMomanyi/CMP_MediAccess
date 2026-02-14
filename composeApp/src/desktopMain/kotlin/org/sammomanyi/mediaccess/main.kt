@@ -9,7 +9,10 @@ import org.koin.core.context.startKoin
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.initialize
 import org.sammomanyi.mediaccess.app.App
+import org.sammomanyi.mediaccess.di.firebaseOptions
 import org.sammomanyi.mediaccess.di.platformModule
 import org.sammomanyi.mediaccess.di.sharedModule
 import org.sammomanyi.mediaccess.features.admin.domain.model.Admin
@@ -20,6 +23,9 @@ import org.sammomanyi.mediaccess.features.identity.presentation.verification.Ver
 
 fun main() {
 
+
+    // 1. Initialize Firebase FIRST — required on JVM before any Firebase.firestore calls
+    Firebase.initialize(options = firebaseOptions)
 
     // Start Koin BEFORE the application block
     startKoin {

@@ -6,6 +6,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseApp
 import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.firestore.FirebaseFirestore
+import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.initialize
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
@@ -56,18 +57,13 @@ actual val platformModule = module {
     single { get<MediAccessDatabase>().coverLinkRequestDao }
 
     // Stub Firebase Firestore - throws error when used
-    single<FirebaseFirestore> {
-        throw UnsupportedOperationException(
-            "Firebase Firestore is not available on Desktop. " +
-                    "Please build and run the Android version for cloud database features."
-        )
-    }
+    single { Firebase.firestore }
 
     // CoverRepository on desktop: no Firestore, pass null or a no-op
     single {
         CoverRepository(
             dao = get(),
-            firestore = null   // no !! needed — it's now nullable
+            firestore = get()  // no !! needed — it's now nullable
         )
     }
 
