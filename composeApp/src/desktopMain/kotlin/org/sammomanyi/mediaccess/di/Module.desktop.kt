@@ -30,6 +30,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.Appointment
 import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
+import org.sammomanyi.mediaccess.features.verification.data.desktop.VisitVerificationRestClient
+import org.sammomanyi.mediaccess.features.verification.presentation.desktop.VisitVerificationViewModel
 import java.io.File
 
 actual val platformModule = module {
@@ -70,6 +72,14 @@ actual val platformModule = module {
             firestore = get()  // no !! needed — it's now nullable
         )
     }
+
+    // ── Cover request management ──────────────────────────────
+    single { DesktopCoverRepository(dao = get(), firestoreClient = get()) }
+    viewModelOf(::AdminCoverViewModel)
+
+    // ── Visit Verification ────────────────────────────────────
+    single { VisitVerificationRestClient(firestoreClient = get()) }
+    viewModelOf(::VisitVerificationViewModel)
 
     // ── Firestore REST (pure Ktor + Java crypto, no Firebase SDK) ──
     single { ServiceAccountCredentials(ServiceAccountCredentials.resolve()) }

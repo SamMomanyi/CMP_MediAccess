@@ -61,5 +61,6 @@ enum class VisitPurpose {
     EMERGENCY,
     PRESCRIPTION_PICKUP,
     LAB_RESULTS,
-    CONSULTATION
+    CONSULTATION,
+    PHARMACY
 }

@@ -1,6 +1,6 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.hospitals
 
-import GenerateVisitCodeUseCase
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*

@@ -1,7 +1,7 @@
 package org.sammomanyi.mediaccess.di
 
 
-import GenerateVisitCodeUseCase
+
 import VerifyVisitCodeUseCase
 import androidx.room.RoomDatabase
 import dev.gitlive.firebase.Firebase
@@ -37,6 +37,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRep
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.BookAppointmentUseCase
+import org.sammomanyi.mediaccess.features.identity.domain.use_case.GenerateVisitCodeUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetCurrentUserUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetHospitalsUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetProfileUseCase
@@ -48,6 +49,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.RegisterUserU
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.SyncHospitalsUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.SyncRecordsUseCase
 import org.sammomanyi.mediaccess.features.identity.presentation.care.CareViewModel
+import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.hospitals.HospitalsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverViewModel
@@ -149,7 +151,7 @@ val sharedModule = module {
     // ✅ FIX: Add CoverViewModel here
     viewModelOf(::CoverViewModel)
     // In Module.kt sharedModule
-
+    viewModelOf(::CheckInViewModel)
     viewModelOf(::VerificationViewModel)
 
 }

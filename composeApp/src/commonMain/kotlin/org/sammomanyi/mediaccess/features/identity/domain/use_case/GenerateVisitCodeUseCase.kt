@@ -1,3 +1,5 @@
+package org.sammomanyi.mediaccess.features.identity.domain.use_case
+
 import kotlinx.coroutines.flow.Flow
 import org.sammomanyi.mediaccess.core.domain.util.DataError
 import org.sammomanyi.mediaccess.core.domain.util.Result
