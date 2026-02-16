@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 import org.sammomanyi.mediaccess.features.cover.presentation.CoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.care.CareScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
@@ -116,7 +117,8 @@ fun MainScreen(
                         navController.navigate(Route.Personal)
                     },
                     onNavigateToWellness = { navController.navigate(Route.Wellness) },
-                    onNavigateToLinkCover = onNavigateToLinkCover
+                    onNavigateToLinkCover = onNavigateToLinkCover,
+                    onNavigateToCheckIn = { navController.navigate(Route.CheckIn) }  // ← ADD
                 )
             }
 
@@ -159,11 +161,10 @@ fun MainScreen(
                 )
             }
 
-            // In your NavHost inside MainScreen, pass it to CoverScreen:
-            composable<Route.Cover> {
-                CoverScreen(
-                    padding = padding,
-                    onNavigateToLinkCover = onNavigateToLinkCover   // ← THREAD THROUGH
+
+            composable<Route.CheckIn> {
+                CheckInScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
 

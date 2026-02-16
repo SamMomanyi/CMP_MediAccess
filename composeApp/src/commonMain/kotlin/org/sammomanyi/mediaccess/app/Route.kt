@@ -44,6 +44,8 @@ sealed interface Route {
     object Benefits : Route
     @Serializable
     object Spent : Route
+
+    @Serializable object CheckIn : Route
 }
 
 

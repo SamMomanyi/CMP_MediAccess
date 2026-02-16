@@ -45,6 +45,7 @@ fun HomeScreen(
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToWellness: () -> Unit,
+    onNavigateToCheckIn: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -110,7 +111,7 @@ fun HomeScreen(
 
             item {
                 CareSection(
-                    onVisitClick = { },
+                    onVisitClick = onNavigateToCheckIn,
                     onBenefitsClick = { showBenefitsDialog = true },
                     onSpentClick = { showSpentDialog = true },
                     onHospitalClick = onNavigateToHospitals
@@ -476,10 +477,12 @@ private fun WellnessSection(onLetsDoItClick: () -> Unit) {
 
 @Composable
 private fun CareSection(
+
     onVisitClick: () -> Unit,
     onBenefitsClick: () -> Unit,
     onSpentClick: () -> Unit,
     onHospitalClick: () -> Unit
+
 ) {
     Card(
         modifier = Modifier
