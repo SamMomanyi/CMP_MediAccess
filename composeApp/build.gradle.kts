@@ -139,6 +139,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.okhttp)
+            implementation("com.google.firebase:firebase-admin:9.3.0")
         }
 
 

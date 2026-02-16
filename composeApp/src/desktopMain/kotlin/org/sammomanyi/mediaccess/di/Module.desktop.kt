@@ -43,6 +43,7 @@ actual val platformModule = module {
     single { get<MediAccessDatabase>().medicalRecordDao }
     single { get<MediAccessDatabase>().hospitalDao }
     single { get<MediAccessDatabase>().appointmentDao }
+    single { get<MediAccessDatabase>().coverLinkRequestDao }
 
 
     // Stub Firebase Auth - throws error when used
@@ -67,6 +68,10 @@ actual val platformModule = module {
         )
     }
 
+    // ── Firebase Admin (JVM-compatible, bypasses security rules) ──
+    single { FirestoreAdminClient() }
+    single { DesktopCoverRepository(dao = get(), firestoreAdmin = get()) }
+
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
     singleOf(::DesktopRecordsRepositoryImpl).bind<RecordsRepository>()
@@ -77,5 +82,4 @@ actual val platformModule = module {
     viewModelOf(::AdminCoverViewModel)
     viewModelOf(::AdminAuthViewModel)
 
-    
 }
