@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
-import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestEntity
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverLinkRequest
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus
 
@@ -87,6 +86,6 @@ private fun Map<String, Any?>.toCoverLinkRequest(): CoverLinkRequest {
         ),
         submittedAt = (get("submittedAt") as? Long) ?: 0L,
         reviewedAt = get("reviewedAt") as? Long,
-        reviewNote = get("reviewNote") as? String
+        reviewNote = get("reviewNote") as? String ?: ""
     )
 }

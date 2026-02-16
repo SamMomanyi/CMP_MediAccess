@@ -19,6 +19,8 @@ import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
 import org.sammomanyi.mediaccess.features.admin.data.AdminRepository
 import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
+import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreAdminClient
 import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopAppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopHospitalRepositoryImpl

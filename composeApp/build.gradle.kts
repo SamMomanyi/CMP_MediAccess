@@ -1,4 +1,5 @@
 import org.gradle.declarative.dsl.schema.FqName.Empty.packageName
+import org.gradle.internal.impldep.org.junit.experimental.categories.Categories.CategoryFilter.exclude
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -140,6 +141,10 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.okhttp)
             implementation("com.google.firebase:firebase-admin:9.3.0")
+
+            exclude(group = "com.google.firebase", module = "firebase-common")
+            exclude(group = "com.google.firebase", module = "firebase-common-ktx")
+            exclude(group = "com.google.android.gms")
         }
 
 
