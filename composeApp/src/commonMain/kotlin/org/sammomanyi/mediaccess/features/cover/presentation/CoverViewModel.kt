@@ -30,6 +30,10 @@ class CoverViewModel(
                             isLoading = false
                         )
                     }
+
+                    // Pull latest status from Firestore into Room first
+                    coverRepository.syncFromFirestore(user.id ?: "")
+
                     coverRepository.getUserRequests(user.id ?: "")
                         .collectLatest { requests ->
                             _state.update { s ->

@@ -88,6 +88,9 @@ class CheckInViewModel(
 
             currentUserId = userId
 
+            // Sync from Firestore before reading Room — this is what was missing
+            coverRepository.syncFromFirestore(userId)
+
             // Get the user's most recent cover request from local Room DB
             // (synced from Firestore on app start via CoverRepository.syncFromFirestore)
             val allRequests = coverRepository.getAllRequests().first()

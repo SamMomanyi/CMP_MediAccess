@@ -117,7 +117,7 @@ fun MainScreen(
                         navController.navigate(Route.Personal)
                     },
                     onNavigateToWellness = { navController.navigate(Route.Wellness) },
-                    onNavigateToLinkCover = onNavigateToLinkCover,
+                    onNavigateToLinkCover = { navController.navigate(Route.LinkCover) },
                     onNavigateToCheckIn = { navController.navigate(Route.CheckIn) }  // ← ADD
                 )
             }
@@ -167,6 +167,14 @@ fun MainScreen(
                     onBack = { navController.popBackStack() }
                 )
             }
+
+            composable<Route.LinkCover> {
+                LinkCoverScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onLinkSuccess = { navController.popBackStack() }
+                )
+            }
+
 
             // Also wire it from HomeScreen's "Link Cover" quick action button:
 

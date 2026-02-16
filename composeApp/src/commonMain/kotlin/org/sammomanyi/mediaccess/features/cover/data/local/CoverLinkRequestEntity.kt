@@ -2,7 +2,10 @@ package org.sammomanyi.mediaccess.features.cover.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+
+@Serializable
 @Entity(tableName = "cover_link_requests")
 data class CoverLinkRequestEntity(
     @PrimaryKey val id: String,

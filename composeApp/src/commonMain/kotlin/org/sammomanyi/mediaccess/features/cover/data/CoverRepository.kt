@@ -101,6 +101,10 @@ class CoverRepository(
 
     // ── Sync from Firestore to local Room ─────────────────────
 
+
+    // ── FIXED SYNC FUNCTION ─────────────────────────────────────
+
+
     suspend fun syncFromFirestore(userId: String) {
         try {
             // gitlive where clause syntax
@@ -117,6 +121,7 @@ class CoverRepository(
             println("🔴 CoverRepository.sync error: ${e.message}")
         }
     }
+    
 }
 
 // ── Mappers ───────────────────────────────────────────────────
