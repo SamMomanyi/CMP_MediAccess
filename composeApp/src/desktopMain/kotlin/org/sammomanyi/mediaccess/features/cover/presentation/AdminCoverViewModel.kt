@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverLinkRequest
@@ -15,12 +16,14 @@ enum class CoverRequestFilter { ALL, PENDING, APPROVED, REJECTED }
 
 data class AdminCoverUiState(
     val requests: List<CoverLinkRequest> = emptyList(),
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val selectedRequest: CoverLinkRequest? = null,
     val activeFilter: CoverRequestFilter = CoverRequestFilter.PENDING,
     val actionInProgress: Boolean = false,
     val actionError: String? = null,
-    val actionSuccess: String? = null
+    val actionSuccess: String? = null,
+    val lastRefreshedAt: Long? = null,
+    val loadError: String? = null
 ) {
     val filteredRequests: List<CoverLinkRequest>
         get() = when (activeFilter) {
@@ -34,35 +37,35 @@ data class AdminCoverUiState(
 }
 
 class AdminCoverViewModel(
-    private val repository: DesktopCoverRepository   // desktop-only repository
+    private val repository: DesktopCoverRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AdminCoverUiState())
     val state: StateFlow<AdminCoverUiState> = _state.asStateFlow()
 
     init {
-        observeAllRequests()
+        // Mirror repository state into UI state
+        repository.state.onEach { repoState ->
+            val currentSelected = _state.value.selectedRequest
+            _state.value = _state.value.copy(
+                requests = repoState.requests,
+                isLoading = repoState.isLoading,
+                loadError = repoState.error,
+                lastRefreshedAt = repoState.lastRefreshedAt,
+                // Keep selected request fresh after refresh
+                selectedRequest = if (currentSelected != null)
+                    repoState.requests.find { it.id == currentSelected.id }
+                else null
+            )
+        }.launchIn(viewModelScope)
+
+        // Load on startup
+        refresh()
     }
 
-    private fun observeAllRequests() {
+    fun refresh() {
         viewModelScope.launch {
-            repository.getAllRequests()
-                .catch { e ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        actionError = "Failed to load requests: ${e.message}"
-                    )
-                }
-                .collect { requests ->
-                    val currentSelected = _state.value.selectedRequest
-                    _state.value = _state.value.copy(
-                        requests = requests,
-                        isLoading = false,
-                        selectedRequest = if (currentSelected != null)
-                            requests.find { it.id == currentSelected.id }
-                        else null
-                    )
-                }
+            repository.refresh()
         }
     }
 

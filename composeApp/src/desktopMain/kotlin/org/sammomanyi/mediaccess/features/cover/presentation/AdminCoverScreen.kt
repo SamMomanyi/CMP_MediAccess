@@ -1,14 +1,11 @@
 package org.sammomanyi.mediaccess.features.cover.presentation
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,11 +33,9 @@ fun AdminCoverScreen() {
     val viewModel: AdminCoverViewModel = koinViewModel()
     val state by viewModel.state.collectAsState()
 
-    // Reject dialog state
     var showRejectDialog by remember { mutableStateOf(false) }
     var rejectNote by remember { mutableStateOf("") }
 
-    // Feedback snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(state.actionSuccess, state.actionError) {
         val msg = state.actionSuccess ?: state.actionError
@@ -62,14 +58,65 @@ fun AdminCoverScreen() {
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
-                // Filter chips
-                Text(
-                    text = "Cover Requests",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
-                )
+                // Header + refresh button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Cover Requests",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (state.lastRefreshedAt != null) {
+                            Text(
+                                text = "Updated ${formatTimestamp(state.lastRefreshedAt!!)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = { viewModel.refresh() },
+                        enabled = !state.isLoading
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
 
+                // Error banner
+                if (state.loadError != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = state.loadError!!,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
+                }
+
+                // Filter chips
                 Row(
                     modifier = Modifier
                         .horizontalScroll(rememberScrollState())
@@ -95,28 +142,46 @@ fun AdminCoverScreen() {
 
                 HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
 
-                if (state.isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                when {
+                    state.isLoading && state.requests.isEmpty() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator()
+                                Spacer(Modifier.height(8.dp))
+                                Text("Loading requests...",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
-                } else if (state.filteredRequests.isEmpty()) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "No ${state.activeFilter.name.lowercase()} requests",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    state.filteredRequests.isEmpty() -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "No ${state.activeFilter.name.lowercase()} requests",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                if (state.lastRefreshedAt == null) {
+                                    Spacer(Modifier.height(8.dp))
+                                    TextButton(onClick = { viewModel.refresh() }) {
+                                        Text("Tap refresh to load")
+                                    }
+                                }
+                            }
+                        }
                     }
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        items(state.filteredRequests, key = { it.id }) { request ->
-                            RequestListItem(
-                                request = request,
-                                isSelected = state.selectedRequest?.id == request.id,
-                                onClick = { viewModel.selectRequest(request) }
-                            )
+                    else -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            items(state.filteredRequests, key = { it.id }) { request ->
+                                RequestListItem(
+                                    request = request,
+                                    isSelected = state.selectedRequest?.id == request.id,
+                                    onClick = { viewModel.selectRequest(request) }
+                                )
+                            }
                         }
                     }
                 }
@@ -162,7 +227,7 @@ fun AdminCoverScreen() {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Please provide a reason for rejection. This will be visible to the patient.",
+                        "Please provide a reason. This will be visible to the patient.",
                         style = MaterialTheme.typography.bodySmall
                     )
                     OutlinedTextField(
@@ -188,9 +253,7 @@ fun AdminCoverScreen() {
                 ) { Text("Reject") }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showRejectDialog = false }) {
-                    Text("Cancel")
-                }
+                OutlinedButton(onClick = { showRejectDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -218,7 +281,6 @@ private fun RequestListItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Avatar
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -227,13 +289,11 @@ private fun RequestListItem(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.Default.Person,
-                contentDescription = null,
+                Icons.Default.Person, contentDescription = null,
                 tint = statusColor(request.status),
                 modifier = Modifier.size(22.dp)
             )
         }
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = request.userEmail,
@@ -248,7 +308,6 @@ private fun RequestListItem(
                 maxLines = 1
             )
         }
-
         StatusBadge(request.status)
     }
 }
@@ -269,7 +328,6 @@ private fun RequestDetailPanel(
             .padding(32.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        // Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -282,8 +340,7 @@ private fun RequestDetailPanel(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
+                    Icons.Default.Person, contentDescription = null,
                     modifier = Modifier.size(30.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -300,33 +357,31 @@ private fun RequestDetailPanel(
 
         HorizontalDivider()
 
-        // Details grid
-        Text("Insurance Details", style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+        Text("Insurance Details",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.SemiBold)
 
-        DetailGrid(
-            items = listOf(
-                "Insurance Provider" to request.insuranceName,
-                "Member Number" to request.memberNumber,
-                "Country" to request.country,
-                "Submitted" to formatTimestamp(request.submittedAt),
-                "User ID" to request.userId
-            )
-        )
+        DetailGrid(listOf(
+            "Insurance Provider" to request.insuranceName,
+            "Member Number" to request.memberNumber,
+            "Country" to request.country,
+            "Submitted" to formatTimestamp(request.submittedAt),
+            "User ID" to request.userId
+        ))
 
-        if (request.reviewedAt != null || request.reviewNote != null) {
+        if (request.reviewedAt != null || request.reviewNote.isNotEmpty()) {
             HorizontalDivider()
-            Text("Review Details", style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-            DetailGrid(
-                items = listOfNotNull(
-                    request.reviewedAt?.let { "Reviewed At" to formatTimestamp(it) },
-                    request.reviewNote?.let { "Review Note" to it }
-                )
-            )
+            Text("Review Details",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold)
+            DetailGrid(listOfNotNull(
+                request.reviewedAt?.let { "Reviewed At" to formatTimestamp(it) },
+                if (request.reviewNote.isNotEmpty()) "Review Note" to request.reviewNote else null
+            ))
         }
 
-        // Actions — only shown for PENDING requests
         if (request.status == CoverStatus.PENDING) {
             HorizontalDivider()
             Row(
@@ -336,9 +391,6 @@ private fun RequestDetailPanel(
                 Button(
                     onClick = onApprove,
                     enabled = !isLoading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
                     modifier = Modifier.weight(1f).height(50.dp)
                 ) {
                     if (isLoading) {
@@ -396,10 +448,7 @@ private fun DetailGrid(items: List<Pair<String, String>>) {
 @Composable
 private fun StatusBadge(status: CoverStatus) {
     val color = statusColor(status)
-    Surface(
-        color = color.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(12.dp)
-    ) {
+    Surface(color = color.copy(alpha = 0.12f), shape = RoundedCornerShape(12.dp)) {
         Text(
             text = status.name,
             color = color,

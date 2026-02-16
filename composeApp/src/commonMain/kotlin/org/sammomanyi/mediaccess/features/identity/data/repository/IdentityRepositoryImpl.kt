@@ -98,7 +98,7 @@ class IdentityRepositoryImpl(
 
             Result.Success(Unit)
         } catch (e: FirebaseAuthException) {
-            val error = when (e.errorCode) {
+            val error = when (e.errorCode.toString()) {
                 "ERROR_EMAIL_ALREADY_IN_USE" -> DataError.Auth.EMAIL_ALREADY_EXISTS
                 "ERROR_INVALID_EMAIL" -> DataError.Validation.INVALID_EMAIL
                 "ERROR_WEAK_PASSWORD" -> DataError.Validation.PASSWORD_TOO_WEAK

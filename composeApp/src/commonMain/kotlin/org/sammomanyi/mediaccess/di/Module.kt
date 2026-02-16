@@ -26,7 +26,6 @@ import org.sammomanyi.mediaccess.core.data.preferences.ThemeRepository
 import org.sammomanyi.mediaccess.core.data.preferences.createDataStore
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
-import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.cover.presentation.CoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
 import org.sammomanyi.mediaccess.features.identity.data.repository.AppointmentRepositoryImpl
@@ -150,7 +149,7 @@ val sharedModule = module {
     // ✅ FIX: Add CoverViewModel here
     viewModelOf(::CoverViewModel)
     // In Module.kt sharedModule
-    viewModelOf(::AdminCoverViewModel)
+
     viewModelOf(::VerificationViewModel)
 
 }

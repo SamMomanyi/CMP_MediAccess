@@ -1,39 +1,52 @@
 package org.sammomanyi.mediaccess.features.cover.data.desktop
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverLinkRequest
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus
 
-/**
- * Desktop-only version of CoverRepository.
- * Uses Firebase Admin SDK (via FirestoreAdminClient) for full read/write access
- * that bypasses Firestore security rules — appropriate for an admin tool.
- * Keeps Room in sync as a local cache.
- */
+data class CoverRequestsState(
+    val requests: List<CoverLinkRequest> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val lastRefreshedAt: Long? = null   // epoch millis — shown in UI
+)
+
 class DesktopCoverRepository(
     private val dao: CoverLinkRequestDao,
-    private val firestoreAdmin: FirestoreAdminClient
+    private val firestoreClient: FirestoreRestClient
 ) {
+    private val _state = MutableStateFlow(CoverRequestsState())
+    val state: StateFlow<CoverRequestsState> = _state.asStateFlow()
 
-    // ── Real-time stream from Firestore → auto-updates UI ─────
-    fun getAllRequests(): Flow<List<CoverLinkRequest>> =
-        firestoreAdmin.collectionSnapshots("cover_requests")
-            .map { rawDocs ->
-                rawDocs.mapNotNull { doc ->
-                    try {
-                        doc.toCoverLinkRequest()
-                    } catch (e: Exception) {
-                        println("⚠️ Skipping malformed doc: ${e.message}")
-                        null
-                    }
-                }.sortedByDescending { it.submittedAt }
-            }
+    // ── Manual refresh ────────────────────────────────────────
+    suspend fun refresh() {
+        _state.value = _state.value.copy(isLoading = true, error = null)
+        try {
+            val rawDocs = firestoreClient.getCollection("cover_requests")
+            val requests = rawDocs.mapNotNull { doc ->
+                try { doc.toCoverLinkRequest() }
+                catch (e: Exception) {
+                    println("⚠️ Skipping malformed doc: ${e.message}")
+                    null
+                }
+            }.sortedByDescending { it.submittedAt }
 
-    fun getPendingRequests(): Flow<List<CoverLinkRequest>> =
-        getAllRequests().map { list -> list.filter { it.status == CoverStatus.PENDING } }
+            _state.value = CoverRequestsState(
+                requests = requests,
+                isLoading = false,
+                lastRefreshedAt = Clock.System.now().toEpochMilliseconds()
+            )
+        } catch (e: Exception) {
+            _state.value = _state.value.copy(
+                isLoading = false,
+                error = "Failed to load: ${e.message}"
+            )
+        }
+    }
 
     // ── Approve ───────────────────────────────────────────────
     suspend fun approveRequest(id: String, note: String = "Approved"): Result<Unit> =
@@ -51,7 +64,7 @@ class DesktopCoverRepository(
         return try {
             val now = Clock.System.now().toEpochMilliseconds()
 
-            firestoreAdmin.updateDocument(
+            firestoreClient.updateDocument(
                 collection = "cover_requests",
                 documentId = id,
                 fields = mapOf(
@@ -61,8 +74,19 @@ class DesktopCoverRepository(
                 )
             )
 
-            // Keep local Room cache in sync so mobile reflects it after next sync
+            // Update local Room cache
             dao.updateStatus(id, status.name, now, note)
+
+            // Optimistically update in-memory state so UI reflects change immediately
+            // without waiting for a full refresh
+            val updated = _state.value.requests.map {
+                if (it.id == id) it.copy(
+                    status = status,
+                    reviewedAt = now,
+                    reviewNote = note
+                ) else it
+            }
+            _state.value = _state.value.copy(requests = updated)
 
             Result.success(Unit)
         } catch (e: Exception) {
@@ -71,8 +95,7 @@ class DesktopCoverRepository(
     }
 }
 
-// ── Map Firestore raw document → domain model ─────────────────
-
+// ── Firestore Map → Domain model ──────────────────────────────
 private fun Map<String, Any?>.toCoverLinkRequest(): CoverLinkRequest {
     return CoverLinkRequest(
         id = get("id") as? String ?: error("Missing id"),

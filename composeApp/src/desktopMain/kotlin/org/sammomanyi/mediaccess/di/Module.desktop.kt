@@ -20,7 +20,8 @@ import org.sammomanyi.mediaccess.features.admin.data.AdminRepository
 import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
-import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreAdminClient
+import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
+import org.sammomanyi.mediaccess.features.cover.data.desktop.ServiceAccountCredentials
 import org.sammomanyi.mediaccess.features.cover.presentation.AdminCoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopAppointmentRepositoryImpl
 import org.sammomanyi.mediaccess.features.identity.data.repository.DesktopHospitalRepositoryImpl
@@ -70,9 +71,10 @@ actual val platformModule = module {
         )
     }
 
-    // ── Firebase Admin (JVM-compatible, bypasses security rules) ──
-    single { FirestoreAdminClient() }
-    single { DesktopCoverRepository(dao = get(), firestoreAdmin = get()) }
+    // ── Firestore REST (pure Ktor + Java crypto, no Firebase SDK) ──
+    single { ServiceAccountCredentials(ServiceAccountCredentials.resolve()) }
+    single { FirestoreRestClient(credentials = get(), httpClient = get()) }
+    single { DesktopCoverRepository(dao = get(), firestoreClient = get()) }
 
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
