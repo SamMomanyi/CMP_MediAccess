@@ -189,6 +189,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":composeApp"))
     debugImplementation(libs.compose.uiTooling)
 
     implementation(libs.androidx.ui.android)

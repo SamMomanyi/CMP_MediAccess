@@ -9,6 +9,7 @@ import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestEntity
 import org.sammomanyi.mediaccess.features.identity.data.local.*
 
+
 @Database(
     entities = [
         UserEntity::class,
@@ -18,7 +19,7 @@ import org.sammomanyi.mediaccess.features.identity.data.local.*
         CoverLinkRequestEntity::class,
                 AdminEntity::class,
     ],
-    version = 5, // Keep version 2 to handle the new tables
+    version = 6, // Keep version 2 to handle the new tables
     exportSchema = true
 )
 @ConstructedBy(MediAccessDatabaseConstructor::class)
@@ -30,6 +31,8 @@ abstract class MediAccessDatabase : RoomDatabase() {
 
     abstract val coverLinkRequestDao: CoverLinkRequestDao
     abstract val adminDao: AdminDao
+
+
 
 }
 
