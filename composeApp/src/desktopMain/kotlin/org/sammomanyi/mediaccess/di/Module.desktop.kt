@@ -8,6 +8,12 @@ import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.initialize
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.http.ContentType.Application.Json
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -18,6 +24,7 @@ import org.sammomanyi.mediaccess.DesktopIdentityRepositoryImpl
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
 import org.sammomanyi.mediaccess.features.admin.data.AdminRepository
 import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthViewModel
+import org.sammomanyi.mediaccess.features.auth.presentation.AdminLoginViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
@@ -30,6 +37,9 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.Appointment
 import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
+import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
+import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
+import org.sammomanyi.mediaccess.features.queue.presentation.StaffManagementViewModel
 import org.sammomanyi.mediaccess.features.verification.data.desktop.VisitVerificationRestClient
 import org.sammomanyi.mediaccess.features.verification.presentation.desktop.VisitVerificationViewModel
 import java.io.File
@@ -44,6 +54,17 @@ actual val platformModule = module {
     }
 
 
+    // ── Ktor HTTP client (OkHttp engine for desktop JVM) ─────
+    single<HttpClient> {
+        HttpClient(OkHttp) {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    isLenient = true
+                })
+            }
+        }
+    }
     single { get<MediAccessDatabase>().adminDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
     single { get<MediAccessDatabase>().hospitalDao }
@@ -86,6 +107,20 @@ actual val platformModule = module {
     single { FirestoreRestClient(credentials = get(), httpClient = get()) }
     single { DesktopCoverRepository(dao = get(), firestoreClient = get()) }
 
+    // ── Queue + Staff ─────────────────────────────────────────
+    single {
+        StaffFirestoreRepository(firestoreClient = get())
+    }
+
+    single {
+        QueueDesktopRepository(firestoreClient = get())
+    }
+
+    // ── Visit Verification REST client ────────────────────────
+    single {
+        VisitVerificationRestClient(firestoreClient = get())
+    }
+
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
     singleOf(::DesktopRecordsRepositoryImpl).bind<RecordsRepository>()
@@ -95,5 +130,9 @@ actual val platformModule = module {
     singleOf(::AdminRepository)
     viewModelOf(::AdminCoverViewModel)
     viewModelOf(::AdminAuthViewModel)
+    viewModelOf(::AdminLoginViewModel)
+    viewModelOf(::AdminCoverViewModel)
+    viewModelOf(::StaffManagementViewModel)
+    viewModelOf(::VisitVerificationViewModel)
 
 }

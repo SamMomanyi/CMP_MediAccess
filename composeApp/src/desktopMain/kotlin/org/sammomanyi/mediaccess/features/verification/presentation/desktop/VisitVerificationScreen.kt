@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffAccount
 import org.sammomanyi.mediaccess.features.verification.data.desktop.CoverVerificationStatus
@@ -98,9 +99,9 @@ fun VisitVerificationScreen(viewModel: VisitVerificationViewModel = koinViewMode
                             }
                             HorizontalDivider()
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                InfoItem("Purpose", result.purpose)
-                                InfoItem("Insurance", result.insuranceName)
-                                InfoItem("Member No.", result.memberNumber)
+                                InfoItem("Purpose", result.purpose?:"")
+                                InfoItem("Insurance", result.insuranceName?:"")
+                                InfoItem("Member No.", result.memberNumber?:"")
                             }
                         }
                     }

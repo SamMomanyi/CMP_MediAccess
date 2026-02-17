@@ -2,8 +2,10 @@ package org.sammomanyi.mediaccess.features.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.ktor.http.parseServerSetCookieHeader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountDao
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
@@ -27,8 +29,8 @@ class AdminLoginViewModel(
     private val _state = MutableStateFlow(AdminLoginState())
     val state = _state.asStateFlow()
 
-    fun onEmailChanged(value: String) = _state.run { value(state.value.copy(email = value)) }
-    fun onPasswordChanged(value: String) = _state.run { value(state.value.copy(password = value)) }
+    fun onEmailChanged(value: String) = _state.update { it.copy(email = value) }
+    fun onPasswordChanged(value: String) = _state.update { it.copy(password = value)  }
 
     fun login() {
         val s = _state.value

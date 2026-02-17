@@ -67,7 +67,8 @@ class VisitVerificationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isVerifying = true, verifyError = null)
 
-            val result = verificationClient.verifyCode(code)
+            // ✅ verifyCode returns Result<VerifiedVisitResult> — unwrap with getOrNull()
+            val result = verificationClient.verifyCode(code).getOrNull()
             if (result == null) {
                 _state.value = _state.value.copy(
                     isVerifying = false,
@@ -95,7 +96,6 @@ class VisitVerificationViewModel(
                 return@launch
             }
 
-            // Valid — load on-duty doctors
             _state.value = _state.value.copy(
                 isVerifying = false,
                 verifiedResult = result,
@@ -111,10 +111,6 @@ class VisitVerificationViewModel(
         }
     }
 
-    fun selectDoctor(doctor: StaffAccount) {
-        _state.value = _state.value.copy(selectedDoctor = doctor)
-    }
-
     fun confirmAssignment() {
         val result = _state.value.verifiedResult ?: return
         val doctor = _state.value.selectedDoctor ?: return
@@ -122,28 +118,27 @@ class VisitVerificationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isAssigning = true, assignError = null)
 
-            // Mark code as used
-            verificationClient.markCodeAsUsed(result.visitCodeId)
+            // ✅ result.code is the code string, result.userId is the patient ID
+            verificationClient.markCodeAsUsed(result.code)
 
-            // Add to doctor queue
             val queueResult = queueRepository.addToQueue(
-                patientUserId = result.patientId,
-                patientName = result.patientEmail.substringBefore("@"),
+                patientUserId = result.userId,          // ✅ was result.patientId
+                patientName = result.patientName,
                 patientEmail = result.patientEmail,
-                visitCodeId = result.visitCodeId,
+                visitCodeId = result.code,              // ✅ was result.visitCodeId
                 purpose = result.purpose,
                 doctor = doctor,
-                insuranceName = result.insuranceName,
-                memberNumber = result.memberNumber
+                insuranceName = result.insuranceName ?: "",
+                memberNumber = result.memberNumber ?: ""
             )
 
             queueResult.fold(
-                onSuccess = { entry ->
+                onSuccess = { _ ->
                     val historyEntry = VerificationHistoryEntry(
                         patientEmail = result.patientEmail,
                         purpose = result.purpose,
                         usedAt = System.currentTimeMillis(),
-                        insuranceName = result.insuranceName
+                        insuranceName = result.insuranceName ?: ""
                     )
                     _state.value = _state.value.copy(
                         isAssigning = false,
@@ -160,6 +155,10 @@ class VisitVerificationViewModel(
                 }
             )
         }
+    }
+
+    fun selectDoctor(doctor: StaffAccount) {
+        _state.value = _state.value.copy(selectedDoctor = doctor)
     }
 
     fun resetForNextPatient() {

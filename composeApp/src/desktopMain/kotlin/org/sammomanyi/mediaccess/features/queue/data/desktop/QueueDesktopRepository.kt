@@ -12,7 +12,7 @@ class QueueDesktopRepository(
     // Get all queue entries for a specific doctor today
     suspend fun getDoctorQueue(doctorId: String, date: String): List<QueueEntry> {
         return try {
-            val docs = firestoreClient.getCollection("queue_entries")
+            val docs = firestoreClient.getCollectionWithIds("queue_entries")
             docs
                 .map { (id, fields) -> fieldsToQueueEntry(id, fields) }
                 .filter { it.doctorId == doctorId && it.date == date }
@@ -27,7 +27,7 @@ class QueueDesktopRepository(
     // Get completed entries for today (doctor history panel)
     suspend fun getDoctorCompletedToday(doctorId: String, date: String): List<QueueEntry> {
         return try {
-            val docs = firestoreClient.getCollection("queue_entries")
+            val docs = firestoreClient.getCollectionWithIds("queue_entries")
             docs
                 .map { (id, fields) -> fieldsToQueueEntry(id, fields) }
                 .filter { it.doctorId == doctorId && it.date == date && it.status == QueueStatus.DONE.name }

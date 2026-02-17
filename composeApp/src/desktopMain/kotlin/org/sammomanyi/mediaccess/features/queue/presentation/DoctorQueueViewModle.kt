@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
@@ -104,7 +105,7 @@ class DoctorQueueViewModel(
         }
     }
 
-    fun dismissError() = _state.run { value(state.value.copy(error = null)) }
+    fun dismissError() = _state.update { it.copy(error = null) }
 
     override fun onCleared() {
         super.onCleared()

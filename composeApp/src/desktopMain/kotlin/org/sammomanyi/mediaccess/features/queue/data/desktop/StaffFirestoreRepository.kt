@@ -11,7 +11,7 @@ class StaffFirestoreRepository(
     // Fetch all staff from Firestore
     suspend fun getAllStaff(): List<StaffAccount> {
         return try {
-            val docs = firestoreClient.getCollection("staff_accounts")
+            val docs = firestoreClient.getCollectionWithIds("staff_accounts")
             docs.map { (id, fields) ->
                 StaffAccount(
                     id = id,

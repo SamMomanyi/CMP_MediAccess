@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountDao
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
@@ -50,18 +51,18 @@ class StaffManagementViewModel(
         }
     }
 
-    fun showCreateDialog() = _state.run { value(state.value.copy(showCreateDialog = true)) }
-    fun dismissCreateDialog() = _state.run { value(state.value.copy(
+    fun  showCreateDialog() = _state.update { it.copy(showCreateDialog = true) }
+    fun dismissCreateDialog() = _state.update { it.copy(
         showCreateDialog = false, newName = "", newEmail = "", newPassword = "",
         newRole = StaffRole.DOCTOR, newRoomNumber = "", newSpecialization = ""
-    )) }
+    ) }
+    fun onNameChanged(v: String) = _state.update { it.copy(newName = v) }
+    fun onEmailChanged(v: String) = _state.update { it.copy(newEmail = v) }
+    fun onPasswordChanged(v: String) = _state.update { it.copy(newPassword = v) }
+    fun onRoleChanged(v: StaffRole) = _state.update { it.copy(newRole = v) }
+    fun onRoomChanged(v: String) = _state.update { it.copy(newRoomNumber = v) }
+    fun onSpecializationChanged(v: String) = _state.update { it.copy(newSpecialization = v) }
 
-    fun onNameChanged(v: String) = _state.run { value(state.value.copy(newName = v)) }
-    fun onEmailChanged(v: String) = _state.run { value(state.value.copy(newEmail = v)) }
-    fun onPasswordChanged(v: String) = _state.run { value(state.value.copy(newPassword = v)) }
-    fun onRoleChanged(v: StaffRole) = _state.run { value(state.value.copy(newRole = v)) }
-    fun onRoomChanged(v: String) = _state.run { value(state.value.copy(newRoomNumber = v)) }
-    fun onSpecializationChanged(v: String) = _state.run { value(state.value.copy(newSpecialization = v)) }
 
     fun createStaff() {
         val s = _state.value
@@ -125,9 +126,7 @@ class StaffManagementViewModel(
         }
     }
 
-    fun dismissFeedback() = _state.run {
-        value(state.value.copy(error = null, successMessage = null))
-    }
+    fun dismissFeedback() = _state.update { it.copy(error = null, successMessage = null) }
 
     private fun sha256(input: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())

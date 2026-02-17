@@ -2,6 +2,7 @@ package org.sammomanyi.mediaccess.features.cover.data.desktop
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.patch
@@ -41,6 +42,25 @@ class FirestoreRestClient(
         }
     }
 
+    // Add this method to FirestoreRestClient.kt alongside getCollection()
+    suspend fun getCollectionWithIds(collection: String): List<Pair<String, Map<String, Any?>>> {
+        val token = credentials.getAccessToken(httpClient)
+        val response = httpClient.get("$baseUrl/$collection") {
+            header("Authorization", "Bearer $token")
+        }
+        val body = response.body<String>()
+        val root = json.parseToJsonElement(body).jsonObject
+
+        val documents = root["documents"]?.jsonArray ?: return emptyList()
+
+        return documents.mapNotNull { doc ->
+            val docObj = doc.jsonObject
+            val fullName = docObj["name"]?.jsonPrimitive?.content ?: return@mapNotNull null
+            val docId = fullName.substringAfterLast("/")
+            val fields = docObj["fields"]?.jsonObject?.let { parseFields(it) } ?: emptyMap()
+            docId to fields
+        }
+    }
     // ── Update specific fields in a document ──────────────────
     suspend fun updateDocument(
         collection: String,
@@ -62,6 +82,13 @@ class FirestoreRestClient(
             header("Authorization", "Bearer $token")
             contentType(ContentType.Application.Json)
             setBody(bodyJson)
+        }
+    }
+
+    suspend fun deleteDocument(collection: String, documentId: String) {
+        val token = credentials.getAccessToken(httpClient)
+        httpClient.delete("$baseUrl/$collection/$documentId") {
+            header("Authorization", "Bearer $token")
         }
     }
 

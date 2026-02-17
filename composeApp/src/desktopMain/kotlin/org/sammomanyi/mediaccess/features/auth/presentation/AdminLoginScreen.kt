@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
+import org.sammomanyi.mediaccess.features.queue.presentation.DoctorDashboardScreen
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorQueueViewModel
 
 @Composable
