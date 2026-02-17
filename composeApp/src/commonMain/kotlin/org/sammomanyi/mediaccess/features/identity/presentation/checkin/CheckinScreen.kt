@@ -1,109 +1,200 @@
+// ─────────────────────────────────────────────────────────────
+// FILE: commonMain/.../features/identity/presentation/checkin/CheckInScreen.kt
+// CHANGE: adds queue position banner + "Your Turn" banner + haptic trigger
+// ─────────────────────────────────────────────────────────────
 package org.sammomanyi.mediaccess.features.identity.presentation.checkin
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CheckInScreen(onBack: () -> Unit) {
-    val viewModel: CheckInViewModel = koinViewModel()
-    val state by viewModel.state.collectAsState()
+fun CheckInScreen(
+    onBack: () -> Unit,
+    viewModel: CheckInViewModel = koinViewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val haptic = LocalHapticFeedback.current
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Check In") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.resetCode()
-                        onBack()
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+    // Trigger haptic feedback exactly once when "Your Turn" fires
+    LaunchedEffect(state.triggerHaptic) {
+        if (state.triggerHaptic) {
+            repeat(3) {                          // 3 pulses — noticeable in waiting room
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                kotlinx.coroutines.delay(200)
+            }
+            viewModel.onHapticTriggered()
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+
+        // ── Top bar ───────────────────────────────────────────
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text("Hospital Check-In", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        // ── "Your Turn" banner — full width, highly visible ───
+        AnimatedVisibility(
+            visible = state.queueState is QueueState.YourTurn,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            val yourTurn = state.queueState as? QueueState.YourTurn
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF10B981),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "It's Your Turn!",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        if (yourTurn != null) {
+                            Text(
+                                "Dr. ${yourTurn.doctorName} · Room ${yourTurn.roomNumber}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
                     }
                 }
-            )
+            }
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentAlignment = Alignment.Center
+
+        // ── Queue position banner (while waiting) ─────────────
+        AnimatedVisibility(
+            visible = state.queueState is QueueState.Waiting,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
         ) {
-            // First, handle the cover gate states
-            when (val gate = state.coverGate) {
-                is CoverGateState.Checking -> {
-                    CheckingCoverContent()
-                }
-                is CoverGateState.None -> {
-                    NoCoverContent(onBack = onBack)
-                }
-                is CoverGateState.Pending -> {
-                    PendingCoverContent(onRefresh = { viewModel.checkCoverStatus() })
-                }
-                is CoverGateState.Error -> {
-                    CoverErrorContent(
-                        message = gate.message,
-                        onRetry = { viewModel.checkCoverStatus() }
+            val waiting = state.queueState as? QueueState.Waiting
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Queue position circle
+                    Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = MaterialTheme.colorScheme.primary) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "#${waiting?.position ?: 0}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "You are #${waiting?.position ?: 0} in queue",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        if (waiting != null) {
+                            Text(
+                                "Dr. ${waiting.doctorName} · Room ${waiting.roomNumber}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    // Animated waiting dots
+                    var dotCount by remember { mutableIntStateOf(1) }
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            kotlinx.coroutines.delay(600)
+                            dotCount = (dotCount % 3) + 1
+                        }
+                    }
+                    Text(
+                        ".".repeat(dotCount),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
+            }
+        }
+
+        // ── Main content area ─────────────────────────────────
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            when (val gate = state.coverGate) {
+                is CoverGateState.Checking -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                is CoverGateState.None -> NoCoverContent(onBack = onBack)
+
+                is CoverGateState.Pending -> PendingCoverContent(onRefresh = viewModel::checkCoverStatus)
+
+                is CoverGateState.Error -> ErrorContent(message = gate.message, onRetry = viewModel::checkCoverStatus)
+
                 is CoverGateState.Approved -> {
-                    // Cover is approved — now show the check-in flow
-                    AnimatedContent(
-                        targetState = state.codeState,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() }
-                    ) { codeState ->
-                        when (codeState) {
-                            is CheckInCodeState.Idle -> {
-                                PurposePickerContent(
-                                    insuranceName = state.insuranceName,
-                                    memberNumber = state.memberNumber,
-                                    onPurposeSelected = { viewModel.generateCode(it) }
-                                )
-                            }
-                            is CheckInCodeState.Generating -> {
-                                GeneratingContent()
-                            }
-                            is CheckInCodeState.Ready -> {
-                                CodeReadyContent(
-                                    codeState = codeState,
-                                    insuranceName = state.insuranceName,
-                                    onGenerateNew = { viewModel.resetCode() }
-                                )
-                            }
-                            is CheckInCodeState.Expired -> {
-                                ExpiredContent(onTryAgain = { viewModel.resetCode() })
-                            }
-                            is CheckInCodeState.GenerationFailed -> {
-                                GenerationFailedContent(
-                                    message = codeState.message,
-                                    onRetry = { viewModel.resetCode() }
-                                )
+                    when (val code = state.codeState) {
+                        CheckInCodeState.Idle -> ApprovedContent(
+                            insuranceName = state.insuranceName ?: "",
+                            memberNumber = state.memberNumber ?: "",
+                            onGenerate = { purpose -> viewModel.generateCode(purpose) }
+                        )
+                        CheckInCodeState.Generating -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator()
+                                    Spacer(Modifier.height(12.dp))
+                                    Text("Generating your code...")
+                                }
                             }
                         }
+                        is CheckInCodeState.Ready -> CodeReadyContent(
+                            codeState = code,
+                            queueState = state.queueState,
+                            onReset = viewModel::resetCode
+                        )
+                        CheckInCodeState.Expired -> ExpiredContent(onReset = viewModel::resetCode)
+                        is CheckInCodeState.GenerationFailed -> ErrorContent(message = code.message, onRetry = viewModel::resetCode)
                     }
                 }
             }
@@ -111,65 +202,189 @@ fun CheckInScreen(onBack: () -> Unit) {
     }
 }
 
-// ── Cover gate screens ────────────────────────────────────────
-
 @Composable
-private fun CheckingCoverContent() {
+private fun ApprovedContent(
+    insuranceName: String,
+    memberNumber: String,
+    onGenerate: (VisitPurpose) -> Unit
+) {
     Column(
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        CircularProgressIndicator()
-        Text(
-            "Checking your cover status...",
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // Cover badge
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF10B981).copy(alpha = 0.10f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
+        ) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Surface(modifier = Modifier.size(44.dp), shape = CircleShape, color = Color(0xFF10B981).copy(alpha = 0.15f)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Shield, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(24.dp))
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Active Cover", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(14.dp))
+                    }
+                    Text(insuranceName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Text("Member No: $memberNumber", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+
+        Text("Select Visit Purpose", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+        // Purpose cards
+        VisitPurpose.entries.forEach { purpose ->
+            Surface(
+                onClick = { onGenerate(purpose) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 2.dp
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        modifier = Modifier.size(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                if (purpose == VisitPurpose.CONSULTATION) Icons.Default.MedicalServices
+                                else Icons.Default.Medication,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(purpose.name.lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            if (purpose == VisitPurpose.CONSULTATION) "See a consultation doctor"
+                            else "Pick up medication or prescription",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CodeReadyContent(
+    codeState: CheckInCodeState.Ready,
+    queueState: QueueState,
+    onReset: () -> Unit
+) {
+    val minutes = codeState.secondsRemaining / 60
+    val seconds = codeState.secondsRemaining % 60
+    val isUrgent = codeState.secondsRemaining < 120
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Show this code to the receptionist", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+
+        // Big code display
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+            border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    codeState.visitCode.code,
+                    style = MaterialTheme.typography.displayMedium.copy(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        letterSpacing = 8.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(8.dp))
+                // Countdown
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Timer,
+                        contentDescription = null,
+                        tint = if (isUrgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Expires in ${minutes}:${seconds.toString().padStart(2, '0')}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isUrgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Queue state message (when not yet queued)
+        if (queueState is QueueState.NotQueued) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Show this code to the receptionist. You'll see your queue position here once checked in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        OutlinedButton(
+            onClick = onReset,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Different purpose")
+        }
     }
 }
 
 @Composable
 private fun NoCoverContent(onBack: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.errorContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.Block,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.error
-            )
-        }
-
-        Text(
-            "No Active Cover Found",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            "You need an approved insurance cover to check in. " +
-                    "Please submit a cover link request and wait for admin approval.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+        Icon(Icons.Default.ShieldMoon, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+        Spacer(Modifier.height(16.dp))
+        Text("No Active Cover Found", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("You need an approved cover to check in.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onBack, shape = RoundedCornerShape(12.dp)) {
             Text("Go to Cover Request")
         }
     }
@@ -178,406 +393,50 @@ private fun NoCoverContent(onBack: () -> Unit) {
 @Composable
 private fun PendingCoverContent(onRefresh: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp)
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.tertiaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Default.HourglassEmpty,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.tertiary
-            )
-        }
-
-        Text(
-            "Cover Pending Approval",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Text(
-            "Your cover link request has been submitted and is awaiting admin approval. " +
-                    "You will be able to check in once your cover is approved.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Surface(
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.Info, null,
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-                Text(
-                    "This usually takes 1-2 business days.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        OutlinedButton(
-            onClick = onRefresh,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Refresh, null, modifier = Modifier.padding(end = 8.dp))
+        Icon(Icons.Default.HourglassTop, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFF59E0B))
+        Spacer(Modifier.height(16.dp))
+        Text("Cover Pending Approval", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Your cover request is being reviewed by an admin.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(onClick = onRefresh, shape = RoundedCornerShape(12.dp)) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
             Text("Check Again")
         }
     }
 }
 
 @Composable
-private fun CoverErrorContent(message: String, onRetry: () -> Unit) {
+private fun ExpiredContent(onReset: () -> Unit) {
     Column(
-        modifier = Modifier.padding(32.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            Icons.Default.ErrorOutline,
-            null,
-            modifier = Modifier.size(56.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Text(
-            "Something went wrong",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            message,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-            Text("Retry")
-        }
-    }
-}
-
-// ── Code flow screens (only shown when cover is APPROVED) ─────
-
-@Composable
-private fun PurposePickerContent(
-    insuranceName: String?,
-    memberNumber: String?,
-    onPurposeSelected: (VisitPurpose) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Cover approved badge
-        Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Default.VerifiedUser, null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Column {
-                    Text(
-                        "Cover Approved",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    if (insuranceName != null) {
-                        Text(
-                            "$insuranceName${if (memberNumber != null) " · $memberNumber" else ""}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Why are you visiting?",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            "Select the purpose to generate a one-time check-in code for the receptionist.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        PurposeCard(
-            icon = {
-                Icon(Icons.Default.MedicalServices, null, modifier = Modifier.size(32.dp))
-            },
-            title = "Consultation",
-            description = "See a doctor or specialist",
-            onClick = { onPurposeSelected(VisitPurpose.CONSULTATION) }
-        )
-
-        PurposeCard(
-            icon = {
-                Icon(Icons.Default.LocalPharmacy, null, modifier = Modifier.size(32.dp))
-            },
-            title = "Pharmacy",
-            description = "Pick up medication or prescription",
-            onClick = { onPurposeSelected(VisitPurpose.PHARMACY) }
-        )
+        Icon(Icons.Default.Timer, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+        Spacer(Modifier.height(16.dp))
+        Text("Code Expired", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Your check-in code has expired. Generate a new one.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onReset, shape = RoundedCornerShape(12.dp)) { Text("Generate New Code") }
     }
 }
 
 @Composable
-private fun PurposeCard(
-    icon: @Composable () -> Unit,
-    title: String,
-    description: String,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                CompositionLocalProvider(
-                    LocalContentColor provides MaterialTheme.colorScheme.primary
-                ) { icon() }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Icon(
-                Icons.Default.ChevronRight, null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
-private fun GeneratingContent() {
+private fun ErrorContent(message: String, onRetry: () -> Unit) {
     Column(
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        CircularProgressIndicator()
-        Text("Generating your code...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Default.ErrorOutline, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f))
+        Spacer(Modifier.height(16.dp))
+        Text("Something went wrong", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(onClick = onRetry, shape = RoundedCornerShape(12.dp)) { Text("Retry") }
     }
-}
-
-@Composable
-private fun CodeReadyContent(
-    codeState: CheckInCodeState.Ready,
-    insuranceName: String?,
-    onGenerateNew: () -> Unit
-) {
-    val minutes = codeState.secondsRemaining / 60
-    val seconds = codeState.secondsRemaining % 60
-    val isExpiringSoon = codeState.secondsRemaining <= 60
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Text(
-            "Show this code\nto reception",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        // Big code display
-        Surface(
-            color = MaterialTheme.colorScheme.primaryContainer,
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = codeState.visitCode.code,
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 6.sp,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = codeState.visitCode.purpose.name
-                        .lowercase()
-                        .replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
-                if (insuranceName != null) {
-                    Text(
-                        text = insuranceName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
-                    )
-                }
-            }
-        }
-
-        // Countdown
-        Surface(
-            color = if (isExpiringSoon)
-                MaterialTheme.colorScheme.errorContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = if (isExpiringSoon)
-                    "⚠ Expiring in %02d:%02d".format(minutes, seconds)
-                else
-                    "Expires in %02d:%02d".format(minutes, seconds),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = if (isExpiringSoon)
-                    MaterialTheme.colorScheme.onErrorContainer
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Text(
-            "This code is single-use and valid for 15 minutes.\n" +
-                    "Only share it with hospital reception or pharmacy staff.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        TextButton(onClick = onGenerateNew) {
-            Icon(Icons.Default.Refresh, null, modifier = Modifier.padding(end = 4.dp))
-            Text("Different purpose")
-        }
-    }
-}
-
-@Composable
-private fun ExpiredContent(onTryAgain: () -> Unit) {
-    Column(
-        modifier = Modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            Icons.Default.TimerOff,
-            null,
-            modifier = Modifier.size(56.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Text(
-            "Code Expired",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Your visit code has expired. Please generate a new one.",
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Button(onClick = onTryAgain, modifier = Modifier.fillMaxWidth()) {
-            Text("Generate New Code")
-        }
-    }
-}
-
-@Composable
-private fun GenerationFailedContent(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            Icons.Default.ErrorOutline,
-            null,
-            modifier = Modifier.size(56.dp),
-            tint = MaterialTheme.colorScheme.error
-        )
-        Text(
-            "Could Not Generate Code",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            message,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth()) {
-            Text("Try Again")
-        }
-    }
-}
