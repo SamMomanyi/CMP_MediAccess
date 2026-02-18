@@ -2,6 +2,7 @@ package org.sammomanyi.mediaccess.di
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseApp
 import dev.gitlive.firebase.auth.FirebaseAuth
@@ -13,6 +14,7 @@ import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType.Application.Json
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.Dispatchers
 import kotlinx.serialization.json.Json
 import org.koin.core.module.dsl.createdAtStart
 import org.koin.core.module.dsl.singleOf
@@ -20,7 +22,9 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.module.dsl.withOptions
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import org.sammomanyi.mediaccess.BootstrapAdminCallback
 import org.sammomanyi.mediaccess.DesktopIdentityRepositoryImpl
+import org.sammomanyi.mediaccess.MediAccessAdminDatabase
 import org.sammomanyi.mediaccess.core.data.database.MediAccessDatabase
 import org.sammomanyi.mediaccess.features.admin.data.AdminRepository
 import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthViewModel
@@ -46,12 +50,18 @@ import java.io.File
 
 actual val platformModule = module {
 
-    single<RoomDatabase.Builder<MediAccessDatabase>> {
-        val dbFile = File(System.getProperty("java.io.tmpdir"), "mediaccess.db")
-        Room.databaseBuilder<MediAccessDatabase>(
+    // ── Desktop Room Database ─────────────────────────────────
+    single {
+        val dbFile = File(System.getProperty("java.io.tmpdir"), "mediaccess_admin.db")
+        Room.databaseBuilder<MediAccessAdminDatabase>(
             name = dbFile.absolutePath
         )
+            .setDriver(BundledSQLiteDriver())
+            .setQueryCoroutineContext(Dispatchers.IO)
+            .addCallback(BootstrapAdminCallback())
+            .build()
     }
+
 
 
     // ── Ktor HTTP client (OkHttp engine for desktop JVM) ─────
@@ -65,23 +75,9 @@ actual val platformModule = module {
             }
         }
     }
-    single { get<MediAccessDatabase>().adminDao }
-    single { get<MediAccessDatabase>().medicalRecordDao }
-    single { get<MediAccessDatabase>().hospitalDao }
-    single { get<MediAccessDatabase>().appointmentDao }
-    single { get<MediAccessDatabase>().coverLinkRequestDao }
-
-
-    // Stub Firebase Auth - throws error when used
-    single<FirebaseAuth> {
-        throw UnsupportedOperationException(
-            "Firebase Auth is not available on Desktop. " +
-                    "Please build and run the Android version for authentication features."
-        )
-    }
-
-    // ── ADD: cover DAO + repository ──
-    single { get<MediAccessDatabase>().coverLinkRequestDao }
+    // ✅ Get DAOs from MediAccessAdminDatabase
+    single { get<MediAccessAdminDatabase>().adminAccountDao }
+    single { get<MediAccessAdminDatabase>().coverLinkRequestDao }
 
     // Stub Firebase Firestore - throws error when used
     single { Firebase.firestore }
