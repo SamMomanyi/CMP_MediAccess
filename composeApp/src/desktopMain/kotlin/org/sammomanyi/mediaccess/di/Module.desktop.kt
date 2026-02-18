@@ -43,6 +43,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRep
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
+import org.sammomanyi.mediaccess.features.queue.presentation.DoctorQueueViewModel
 import org.sammomanyi.mediaccess.features.queue.presentation.StaffManagementViewModel
 import org.sammomanyi.mediaccess.features.verification.data.desktop.VisitVerificationRestClient
 import org.sammomanyi.mediaccess.features.verification.presentation.desktop.VisitVerificationViewModel
@@ -78,6 +79,7 @@ actual val platformModule = module {
     // ✅ Get DAOs from MediAccessAdminDatabase
     single { get<MediAccessAdminDatabase>().adminAccountDao }
     single { get<MediAccessAdminDatabase>().coverLinkRequestDao }
+
 
     // Stub Firebase Firestore - throws error when used
     single { Firebase.firestore }
@@ -130,5 +132,4 @@ actual val platformModule = module {
     viewModelOf(::AdminCoverViewModel)
     viewModelOf(::StaffManagementViewModel)
     viewModelOf(::VisitVerificationViewModel)
-
 }

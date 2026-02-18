@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.core.domain.util.Result
@@ -130,25 +131,38 @@ class CheckInViewModel(
         val userId = currentUserId ?: return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(codeState = CheckInCodeState.Generating)
+            _state.update { it.copy(codeState = CheckInCodeState.Generating) }
+
+            // ✅ Check if user already has an active queue entry
+            val activeEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
+            if (activeEntry != null) {
+                _state.update { it.copy(
+                    codeState = CheckInCodeState.GenerationFailed(
+                        "You already have an active check-in. Please wait for your turn."
+                    )
+                ) }
+                return@launch
+            }
 
             val result = generateVisitCodeUseCase(userId, purpose)
             when (result) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         codeState = CheckInCodeState.Ready(
                             visitCode = result.data,
                             secondsRemaining = 900L
                         ),
                         queueState = QueueState.NotQueued
-                    )
+                    ) }
                     startCountdown(result.data)
-                    startQueueListener(userId)  // ← Start listening for queue assignment
+                    startQueueListener(userId)
                 }
                 is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        codeState = CheckInCodeState.GenerationFailed("Could not generate code. Please try again.")
-                    )
+                    _state.update { it.copy(
+                        codeState = CheckInCodeState.GenerationFailed(
+                            "Could not generate code. Please try again."
+                        )
+                    ) }
                 }
             }
         }

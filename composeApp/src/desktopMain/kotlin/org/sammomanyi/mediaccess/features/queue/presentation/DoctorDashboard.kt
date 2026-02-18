@@ -1,5 +1,6 @@
 package org.sammomanyi.mediaccess.features.queue.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,23 +15,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.getKoin
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
+import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
+import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
+
 
 @Composable
 fun DoctorDashboardScreen(
     account: AdminAccountEntity,
     onLogout: () -> Unit,
-    viewModel: DoctorQueueViewModel = koinViewModel()
+
 ) {
+
+    val queueRepository: QueueDesktopRepository = koinInject()
+    val staffRepository: StaffFirestoreRepository = koinInject()
+
+    // ✅ Instantiate manually with account
+    val viewModel = remember(account) {
+        DoctorQueueViewModel(
+            queueRepository = queueRepository,
+            staffRepository = staffRepository,
+            doctor = account
+        )
+    }
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(state.error) {
         if (state.error != null) {
-            kotlinx.coroutines.delay(3000)
+            delay(3000)
             viewModel.dismissError()
         }
     }
@@ -89,8 +110,8 @@ fun DoctorDashboardScreen(
                     }
 
                     state.lastRefreshedAt?.let { ts ->
-                        val time = kotlinx.datetime.Instant.fromEpochMilliseconds(ts)
-                            .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                        val time = Instant.fromEpochMilliseconds(ts)
+                            .toLocalDateTime(TimeZone.currentSystemDefault())
                         Text(
                             "Updated ${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
                             style = MaterialTheme.typography.labelSmall,
@@ -246,7 +267,7 @@ private fun CurrentPatientCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0891B2).copy(alpha = 0.08f)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0891B2).copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, Color(0xFF0891B2).copy(alpha = 0.3f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -335,8 +356,8 @@ private fun WaitingPatientCard(
 @Composable
 private fun CompletedPatientCard(entry: QueueEntry) {
     val completedTime = entry.completedAt?.let { ts ->
-        val dt = kotlinx.datetime.Instant.fromEpochMilliseconds(ts)
-            .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+        val dt = Instant.fromEpochMilliseconds(ts)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
         "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
     } ?: "--:--"
 
