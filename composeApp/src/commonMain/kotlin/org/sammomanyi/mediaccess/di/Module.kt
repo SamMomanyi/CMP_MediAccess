@@ -59,6 +59,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileV
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationViewModel
+import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.wellness.data.WellnessRepository
 import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessViewModel
 
@@ -103,7 +104,7 @@ val sharedModule = module {
     single { NewsService(get()) }
     // Register CoverRepository directly — no Impl needed
     single { CoverRepository(get(), get()) }
-
+    single { QueueRepository(get()) }
     // 2. DAOs
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
