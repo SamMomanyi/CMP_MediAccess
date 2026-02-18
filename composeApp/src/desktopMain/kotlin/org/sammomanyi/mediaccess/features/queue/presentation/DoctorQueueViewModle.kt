@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
+import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
@@ -24,15 +25,20 @@ data class DoctorQueueState(
     val actionInProgress: Boolean = false,
     val error: String? = null,
     val doctorName: String = "",
-    val lastRefreshedAt: Long? = null
+    val lastRefreshedAt: Long? = null,
+    val isAvailable: Boolean = true  // ← NEW
 )
 
 class DoctorQueueViewModel(
     private val queueRepository: QueueDesktopRepository,
+    private val staffRepository: StaffFirestoreRepository,  // ← NEW param
     private val doctor: AdminAccountEntity
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(DoctorQueueState(doctorName = doctor.name))
+    private val _state = MutableStateFlow(DoctorQueueState(
+        doctorName = doctor.name,
+        isAvailable = true  // default to available on login
+    ))
     val state: StateFlow<DoctorQueueState> = _state.asStateFlow()
 
     private var autoPollJob: Job? = null
@@ -41,6 +47,18 @@ class DoctorQueueViewModel(
         refresh()
         startAutoPoll()
     }
+
+    // ✅ NEW: Toggle availability
+    fun toggleAvailability() {
+        viewModelScope.launch {
+            val newStatus = !_state.value.isAvailable
+            _state.update { it.copy(isAvailable = newStatus) }
+            staffRepository.setOnDuty(doctor.id, newStatus)
+        }
+    }
+
+    // ... rest of the ViewModel stays the same
+
 
     // Auto-refresh every 30 seconds (no real-time listener on desktop)
     private fun startAutoPoll() {

@@ -43,6 +43,7 @@ fun DoctorDashboardScreen(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 2.dp
         ) {
+// In DoctorDashboardScreen, inside the top bar Row:
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -64,7 +65,29 @@ fun DoctorDashboardScreen(
                         Text("Doctor Dashboard · ${account.email}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // ✅ NEW: Availability Toggle
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text(
+                            "Available",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (state.isAvailable) Color(0xFF10B981) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Switch(
+                            checked = state.isAvailable,
+                            onCheckedChange = { viewModel.toggleAvailability() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF10B981)
+                            )
+                        )
+                    }
+
                     state.lastRefreshedAt?.let { ts ->
                         val time = kotlinx.datetime.Instant.fromEpochMilliseconds(ts)
                             .toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())

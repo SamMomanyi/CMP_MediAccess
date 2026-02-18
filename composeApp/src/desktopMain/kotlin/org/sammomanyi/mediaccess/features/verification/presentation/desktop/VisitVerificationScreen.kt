@@ -197,16 +197,51 @@ private fun DoctorSelectCard(doctor: StaffAccount, isSelected: Boolean, onSelect
         border = androidx.compose.foundation.BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor)
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = Color(0xFF0891B2).copy(alpha = 0.12f)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(doctor.name.take(2).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF0891B2), fontWeight = FontWeight.Bold)
+            // Avatar with online indicator
+            Box {
+                Surface(modifier = Modifier.size(36.dp), shape = CircleShape, color = Color(0xFF0891B2).copy(alpha = 0.12f)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(doctor.name.take(2).uppercase(), style = MaterialTheme.typography.labelMedium, color = Color(0xFF0891B2), fontWeight = FontWeight.Bold)
+                    }
+                }
+                // Online indicator (green dot if isOnDuty)
+                if (doctor.isOnDuty) {
+                    Surface(
+                        modifier = Modifier.size(10.dp).align(Alignment.BottomEnd),
+                        shape = CircleShape,
+                        color = Color(0xFF10B981)
+                    ) {}
                 }
             }
+
             Spacer(Modifier.width(10.dp))
+
             Column(modifier = Modifier.weight(1f)) {
-                Text("Dr. ${doctor.name}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                Text("Room ${doctor.roomNumber}${if (doctor.specialization.isNotBlank()) " · ${doctor.specialization}" else ""}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Dr. ${doctor.name}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    if (doctor.isOnDuty) {
+                        Spacer(Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF10B981).copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                "Online",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF10B981),
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+                Text(
+                    "Room ${doctor.roomNumber}${if (doctor.specialization.isNotBlank()) " · ${doctor.specialization}" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
             if (isSelected) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF0891B2), modifier = Modifier.size(20.dp))
             }

@@ -102,7 +102,7 @@ class VisitVerificationViewModel(
                 isLoadingDoctors = true
             )
 
-            val doctors = staffRepository.getOnDutyDoctors()
+            val doctors = staffRepository.getAllDoctors()
             _state.value = _state.value.copy(
                 isLoadingDoctors = false,
                 showDoctorPicker = true,

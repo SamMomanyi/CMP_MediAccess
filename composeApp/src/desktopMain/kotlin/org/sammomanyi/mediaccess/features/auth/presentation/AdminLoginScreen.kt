@@ -15,11 +15,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
-import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorDashboardScreen
-import org.sammomanyi.mediaccess.features.queue.presentation.DoctorQueueViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminLoginScreen() {
     val viewModel: AdminLoginViewModel = koinViewModel()
@@ -36,7 +35,6 @@ fun AdminLoginScreen() {
                 return
             }
             else -> {
-                // ADMIN and RECEPTIONIST both see the AdminDashboard
                 AdminDashboard(
                     account = account,
                     onLogout = { viewModel.logout(account) }
@@ -48,6 +46,7 @@ fun AdminLoginScreen() {
 
     // ── Login form ────────────────────────────────────────────
     var passwordVisible by remember { mutableStateOf(false) }
+    var roleDropdownExpanded by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Card(
@@ -88,6 +87,53 @@ fun AdminLoginScreen() {
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                // Role Selector Dropdown
+                ExposedDropdownMenuBox(
+                    expanded = roleDropdownExpanded,
+                    onExpandedChange = { roleDropdownExpanded = !roleDropdownExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = when (state.selectedRole) {
+                            StaffRole.ADMIN -> "Admin"
+                            StaffRole.RECEPTIONIST -> "Receptionist"
+                            StaffRole.DOCTOR -> "Doctor"
+                            StaffRole.PHARMACIST -> "Pharmacist"
+                        },
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Login as") },
+                        leadingIcon = { Icon(Icons.Default.PersonOutline, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = roleDropdownExpanded) },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = roleDropdownExpanded,
+                        onDismissRequest = { roleDropdownExpanded = false }
+                    ) {
+                        StaffRole.entries.forEach { role ->
+                            DropdownMenuItem(
+                                text = { Text(role.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                onClick = {
+                                    viewModel.onRoleSelected(role)
+                                    roleDropdownExpanded = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        when (role) {
+                                            StaffRole.ADMIN -> Icons.Default.AdminPanelSettings
+                                            StaffRole.RECEPTIONIST -> Icons.Default.Desk
+                                            StaffRole.DOCTOR -> Icons.Default.MedicalServices
+                                            StaffRole.PHARMACIST -> Icons.Default.Medication
+                                        },
+                                        contentDescription = null
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
 
                 OutlinedTextField(
                     value = state.email,
@@ -153,12 +199,6 @@ fun AdminLoginScreen() {
                         Text("Sign In", fontWeight = FontWeight.Bold)
                     }
                 }
-
-                Text(
-                    "Receptionist · Doctor · Admin",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }

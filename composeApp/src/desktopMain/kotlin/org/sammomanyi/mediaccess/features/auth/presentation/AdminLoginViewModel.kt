@@ -16,6 +16,7 @@ import java.security.MessageDigest
 data class AdminLoginState(
     val email: String = "",
     val password: String = "",
+    val selectedRole: StaffRole = StaffRole.RECEPTIONIST,  // ← NEW
     val isLoading: Boolean = false,
     val error: String? = null,
     val loggedInAccount: AdminAccountEntity? = null
@@ -30,26 +31,37 @@ class AdminLoginViewModel(
     val state = _state.asStateFlow()
 
     fun onEmailChanged(value: String) = _state.update { it.copy(email = value) }
-    fun onPasswordChanged(value: String) = _state.update { it.copy(password = value)  }
+    fun onPasswordChanged(value: String) = _state.update { it.copy(password = value) }
+    fun onRoleSelected(role: StaffRole) = _state.update { it.copy(selectedRole = role) }  // ← NEW
 
     fun login() {
         val s = _state.value
         if (s.email.isBlank() || s.password.isBlank()) {
-            _state.value = s.copy(error = "Please enter email and password")
+            _state.update { it.copy(error = "Please enter email and password") }
             return
         }
 
         viewModelScope.launch {
-            _state.value = s.copy(isLoading = true, error = null)
+            _state.update { it.copy(isLoading = true, error = null) }
 
             val hash = sha256(s.password)
             val account = adminAccountDao.getByEmail(s.email.trim().lowercase())
 
+            // Verify account exists + password matches
             if (account == null || account.passwordHash != hash) {
-                _state.value = _state.value.copy(
+                _state.update { it.copy(
                     isLoading = false,
                     error = "Invalid email or password"
-                )
+                ) }
+                return@launch
+            }
+
+            // ✅ NEW: Role verification — check if account has the selected role
+            if (account.role != s.selectedRole.name) {
+                _state.update { it.copy(
+                    isLoading = false,
+                    error = "This account is not registered as ${s.selectedRole.name.lowercase()}. Please select the correct role."
+                ) }
                 return@launch
             }
 
@@ -59,7 +71,7 @@ class AdminLoginViewModel(
                 staffFirestoreRepository.setOnDuty(account.id, true)
             }
 
-            _state.value = _state.value.copy(isLoading = false, loggedInAccount = account)
+            _state.update { it.copy(isLoading = false, loggedInAccount = account) }
         }
     }
 

@@ -32,10 +32,10 @@ class StaffFirestoreRepository(
     }
 
     // Only returns on-duty doctors — used by receptionist doctor picker
-    suspend fun getOnDutyDoctors(): List<StaffAccount> =
-        getAllStaff().filter {
-            it.role == StaffRole.DOCTOR.name && it.isOnDuty
-        }
+// Replace getOnDutyDoctors() with this:
+    suspend fun getAllDoctors(): List<StaffAccount> =
+        getAllStaff().filter { it.role == StaffRole.DOCTOR.name }
+            .sortedBy { it.name }
 
     // Set a staff member's duty status (called on login/logout)
     suspend fun setOnDuty(staffId: String, isOnDuty: Boolean) {
