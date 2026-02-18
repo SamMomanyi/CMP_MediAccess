@@ -13,6 +13,7 @@ import org.sammomanyi.mediaccess.di.platformModule
 import org.sammomanyi.mediaccess.di.sharedModule
 import org.sammomanyi.mediaccess.features.admin.domain.model.Admin
 import org.sammomanyi.mediaccess.features.admin.presentation.AdminAuthScreen
+import org.sammomanyi.mediaccess.features.auth.presentation.AdminLoginScreen
 
 //moved outside application
 
@@ -26,24 +27,14 @@ fun main() {
     }
 
     application {
-        var loggedInAdmin by remember { mutableStateOf<Admin?>(null) }
+
 
         Window(
             onCloseRequest = ::exitApplication,
-            title = if (loggedInAdmin != null) "MediAccess Admin — ${loggedInAdmin!!.name}"
-            else "MediAccess Admin",
+            title =  "MediAccess Admin",
             state = WindowState(width = 960.dp, height = 700.dp)
         ) {
-            if (loggedInAdmin == null) {
-                AdminAuthScreen(
-                    onAuthenticated = { admin -> loggedInAdmin = admin }
-                )
-            } else {
-                AdminDashboard(
-                    admin = loggedInAdmin!!,
-                    onLogout = { loggedInAdmin = null }
-                )
-            }
+            AdminLoginScreen()
         }
     }
 }
