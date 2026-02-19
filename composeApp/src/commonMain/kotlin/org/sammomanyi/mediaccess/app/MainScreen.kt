@@ -11,15 +11,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessColors
 import org.sammomanyi.mediaccess.features.cover.presentation.CoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.care.CareScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInViewModel
+import org.sammomanyi.mediaccess.features.identity.presentation.checkin.QueueState
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.notifications.NotificationsScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.waitingroom.WaitingRoomScreen
 import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessScreen
 
 data class BottomNavItem(
@@ -161,13 +165,6 @@ fun MainScreen(
                 )
             }
 
-
-            composable<Route.CheckIn> {
-                CheckInScreen(
-                    onBack = { navController.popBackStack() }
-                )
-            }
-
             composable<Route.LinkCover> {
                 LinkCoverScreen(
                     onBackClick = { navController.popBackStack() },
@@ -175,7 +172,26 @@ fun MainScreen(
                 )
             }
 
+            composable<Route.CheckIn> {
+                CheckInScreen(
+                    onBack = { navController.popBackStack() },
+                            onNavigateToWaitingRoom = { navController.navigate(Route.WaitingRoom) }
+                )
+            }
 
+
+
+
+            // In your NavHost:
+            composable<Route.WaitingRoom> {
+                val checkInViewModel: CheckInViewModel = koinViewModel()
+                val state by checkInViewModel.state.collectAsState()
+
+                WaitingRoomScreen(
+                    queueState = state.queueState,
+                    onBack = { navController.navigateUp() }
+                )
+            }
             // Also wire it from HomeScreen's "Link Cover" quick action button:
 
         }

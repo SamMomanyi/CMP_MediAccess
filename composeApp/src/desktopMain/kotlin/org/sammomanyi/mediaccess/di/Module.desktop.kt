@@ -54,14 +54,18 @@ actual val platformModule = module {
     // ── Desktop Room Database ─────────────────────────────────
     single {
         val dbFile = File(System.getProperty("java.io.tmpdir"), "mediaccess_admin.db")
+
+        // ✅ NO DELETE - database persists between runs
         Room.databaseBuilder<MediAccessAdminDatabase>(
             name = dbFile.absolutePath
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
-            .addCallback(BootstrapAdminCallback())
+            .fallbackToDestructiveMigration(dropAllTables = true)  // Only deletes if migration fails
+            .addCallback(BootstrapAdminCallback())  // Only runs on CREATE, not every launch
             .build()
     }
+
 
 
 

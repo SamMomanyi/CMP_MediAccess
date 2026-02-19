@@ -45,6 +45,8 @@ sealed interface Route {
     @Serializable
     object Spent : Route
 
+    @Serializable
+    object WaitingRoom : Route
     @Serializable object CheckIn : Route
 }
 

@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// FILE: commonMain/.../features/identity/presentation/checkin/CheckInViewModel.kt
-// CHANGE: adds real-time queue listener after code is generated
-// ─────────────────────────────────────────────────────────────
 package org.sammomanyi.mediaccess.features.identity.presentation.checkin
 
 import androidx.lifecycle.ViewModel
@@ -23,10 +19,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GenerateVisitCodeUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetCurrentUserUseCase
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
-import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
-// ── Cover gate state ──────────────────────────────────────────
 sealed class CoverGateState {
     object Checking : CoverGateState()
     object Approved : CoverGateState()
@@ -35,7 +29,6 @@ sealed class CoverGateState {
     data class Error(val message: String) : CoverGateState()
 }
 
-// ── Code generation state ─────────────────────────────────────
 sealed class CheckInCodeState {
     object Idle : CheckInCodeState()
     object Generating : CheckInCodeState()
@@ -44,9 +37,8 @@ sealed class CheckInCodeState {
     data class GenerationFailed(val message: String) : CheckInCodeState()
 }
 
-// ── Queue state (after code is verified by receptionist) ──────
 sealed class QueueState {
-    object NotQueued : QueueState()             // Code generated, not verified yet
+    object NotQueued : QueueState()
     data class Waiting(
         val position: Int,
         val doctorName: String,
@@ -66,8 +58,8 @@ data class CheckInUiState(
     val queueState: QueueState = QueueState.NotQueued,
     val insuranceName: String? = null,
     val memberNumber: String? = null,
-    // Triggers haptic feedback exactly once on Your Turn transition
-    val triggerHaptic: Boolean = false
+    val triggerHaptic: Boolean = false,
+    val shouldNavigateToWaitingRoom: Boolean = false
 )
 
 class CheckInViewModel(
@@ -88,22 +80,19 @@ class CheckInViewModel(
         checkCoverStatus()
     }
 
-    // ── Step 1: Check cover status ────────────────────────────
     fun checkCoverStatus() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(coverGate = CoverGateState.Checking)
+            _state.update { it.copy(coverGate = CoverGateState.Checking) }
 
             val user = getCurrentUserUseCase().firstOrNull()
             val userId = user?.id
 
             if (userId == null) {
-                _state.value = _state.value.copy(coverGate = CoverGateState.Error("Please log in to check in."))
+                _state.update { it.copy(coverGate = CoverGateState.Error("Please log in to check in.")) }
                 return@launch
             }
 
             currentUserId = userId
-
-            // Pull fresh status from Firestore into Room
             coverRepository.syncFromFirestore(userId)
 
             val allRequests = coverRepository.getAllRequests().firstOrNull() ?: emptyList()
@@ -113,19 +102,18 @@ class CheckInViewModel(
                 .firstOrNull()
 
             when {
-                latestRequest == null -> _state.value = _state.value.copy(coverGate = CoverGateState.None)
-                latestRequest.status == CoverStatus.APPROVED -> _state.value = _state.value.copy(
+                latestRequest == null -> _state.update { it.copy(coverGate = CoverGateState.None) }
+                latestRequest.status == CoverStatus.APPROVED -> _state.update { it.copy(
                     coverGate = CoverGateState.Approved,
                     insuranceName = latestRequest.insuranceName,
                     memberNumber = latestRequest.memberNumber
-                )
-                latestRequest.status == CoverStatus.PENDING -> _state.value = _state.value.copy(coverGate = CoverGateState.Pending)
-                else -> _state.value = _state.value.copy(coverGate = CoverGateState.None)
+                ) }
+                latestRequest.status == CoverStatus.PENDING -> _state.update { it.copy(coverGate = CoverGateState.Pending) }
+                else -> _state.update { it.copy(coverGate = CoverGateState.None) }
             }
         }
     }
 
-    // ── Step 2: Generate code ─────────────────────────────────
     fun generateCode(purpose: VisitPurpose) {
         if (_state.value.coverGate !is CoverGateState.Approved) return
         val userId = currentUserId ?: return
@@ -133,7 +121,7 @@ class CheckInViewModel(
         viewModelScope.launch {
             _state.update { it.copy(codeState = CheckInCodeState.Generating) }
 
-            // ✅ Check if user already has an active queue entry
+            // Check if already has active queue entry
             val activeEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
             if (activeEntry != null) {
                 _state.update { it.copy(
@@ -168,7 +156,6 @@ class CheckInViewModel(
         }
     }
 
-    // ── Queue listener — real-time Firestore via gitlive ──────
     private fun startQueueListener(userId: String) {
         queueListenerJob?.cancel()
         queueListenerJob = viewModelScope.launch {
@@ -193,24 +180,28 @@ class CheckInViewModel(
                     else -> QueueState.NotQueued
                 }
 
-                // Trigger haptic exactly once when transitioning to YourTurn
+                val wasNotQueued = _state.value.queueState is QueueState.NotQueued
+                val isNowQueued = newQueueState !is QueueState.NotQueued
                 val wasAlreadyYourTurn = _state.value.queueState is QueueState.YourTurn
                 val isNowYourTurn = newQueueState is QueueState.YourTurn
-                val shouldHaptic = isNowYourTurn && !wasAlreadyYourTurn
 
-                _state.value = _state.value.copy(
+                _state.update { it.copy(
                     queueState = newQueueState,
-                    triggerHaptic = shouldHaptic
-                )
+                    shouldNavigateToWaitingRoom = wasNotQueued && isNowQueued,  // ✅ Navigate on first queue entry
+                    triggerHaptic = isNowYourTurn && !wasAlreadyYourTurn
+                ) }
             }
         }
     }
 
-    fun onHapticTriggered() {
-        _state.value = _state.value.copy(triggerHaptic = false)
+    fun onNavigatedToWaitingRoom() {
+        _state.update { it.copy(shouldNavigateToWaitingRoom = false) }
     }
 
-    // ── Countdown timer ───────────────────────────────────────
+    fun onHapticTriggered() {
+        _state.update { it.copy(triggerHaptic = false) }
+    }
+
     private fun startCountdown(code: VisitCode) {
         countdownJob?.cancel()
         countdownJob = viewModelScope.launch {
@@ -218,12 +209,12 @@ class CheckInViewModel(
             while (isActive) {
                 val remaining = (expiresAt - System.currentTimeMillis()) / 1000
                 if (remaining <= 0) {
-                    _state.value = _state.value.copy(codeState = CheckInCodeState.Expired)
+                    _state.update { it.copy(codeState = CheckInCodeState.Expired) }
                     break
                 }
                 val current = _state.value.codeState
                 if (current is CheckInCodeState.Ready) {
-                    _state.value = _state.value.copy(codeState = current.copy(secondsRemaining = remaining))
+                    _state.update { it.copy(codeState = current.copy(secondsRemaining = remaining)) }
                 }
                 delay(1000)
             }
@@ -233,10 +224,10 @@ class CheckInViewModel(
     fun resetCode() {
         countdownJob?.cancel()
         queueListenerJob?.cancel()
-        _state.value = _state.value.copy(
+        _state.update { it.copy(
             codeState = CheckInCodeState.Idle,
             queueState = QueueState.NotQueued
-        )
+        ) }
     }
 
     override fun onCleared() {
@@ -245,4 +236,3 @@ class CheckInViewModel(
         queueListenerJob?.cancel()
     }
 }
-

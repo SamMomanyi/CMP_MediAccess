@@ -29,6 +29,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
 @Composable
 fun CheckInScreen(
     onBack: () -> Unit,
+    onNavigateToWaitingRoom: () -> Unit,
     viewModel: CheckInViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -42,6 +43,13 @@ fun CheckInScreen(
                 kotlinx.coroutines.delay(200)
             }
             viewModel.onHapticTriggered()
+        }
+    }
+
+    LaunchedEffect(state.shouldNavigateToWaitingRoom) {
+        if (state.shouldNavigateToWaitingRoom) {
+            onNavigateToWaitingRoom()
+            viewModel.onNavigatedToWaitingRoom()
         }
     }
 
