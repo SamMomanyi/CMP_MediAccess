@@ -10,13 +10,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.koin.core.context.GlobalContext.get
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
+import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionItem
+import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionStatus
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
+
+private val prescriptionRepository: PrescriptionRepository = get()
+private val pharmacyQueueRepository: PharmacyQueueRepository = get()
 data class DoctorQueueState(
     val waitingQueue: List<QueueEntry> = emptyList(),
     val currentPatient: QueueEntry? = null,
@@ -26,7 +35,9 @@ data class DoctorQueueState(
     val error: String? = null,
     val doctorName: String = "",
     val lastRefreshedAt: Long? = null,
-    val isAvailable: Boolean = true  // ← NEW
+    val isAvailable: Boolean = true , // ← NEW
+    val showPrescriptionDialog: Boolean = false,
+    val selectedPatientForPrescription: QueueEntry? = null
 )
 
 class DoctorQueueViewModel(
@@ -129,4 +140,73 @@ class DoctorQueueViewModel(
         super.onCleared()
         autoPollJob?.cancel()
     }
+
+    fun showPrescriptionDialog(patient: QueueEntry) {
+        _state.update { it.copy(
+            showPrescriptionDialog = true,
+            selectedPatientForPrescription = patient
+        ) }
+    }
+
+    fun dismissPrescriptionDialog() {
+        _state.update { it.copy(
+            showPrescriptionDialog = false,
+            selectedPatientForPrescription = null
+        ) }
+    }
+
+    fun createPrescription(
+        medications: List<PrescriptionItem>,
+        notes: String
+    ) {
+        val patient = _state.value.selectedPatientForPrescription ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(actionInProgress = true) }
+
+            val prescription = Prescription(
+                id = "",
+                patientUserId = patient.patientUserId,
+                patientName = patient.patientName,
+                patientEmail = patient.patientEmail,
+                doctorId = doctor.id,
+                doctorName = doctor.name,
+                queueEntryId = patient.id,
+                medications = medications,
+                notes = notes,
+                status = PrescriptionStatus.PENDING,
+                createdAt = System.currentTimeMillis(),
+                date = QueueRepository.todayString()
+            )
+
+            prescriptionRepository.createPrescription(prescription).fold(
+                onSuccess = { prescriptionId ->
+                    // Add to pharmacy queue
+                    pharmacyQueueRepository.addToPharmacyQueue(
+                        patientUserId = patient.patientUserId,
+                        patientName = patient.patientName,
+                        patientEmail = patient.patientEmail,
+                        prescriptionId = prescriptionId,
+                        date = QueueRepository.todayString()
+                    )
+
+                    // Mark patient as done in doctor queue
+                    queueRepository.markPatientDone(patient.id, doctor.id, QueueRepository.todayString())
+
+                    _state.update { it.copy(
+                        actionInProgress = false,
+                        showPrescriptionDialog = false,
+                        selectedPatientForPrescription = null
+                    ) }
+                    refresh()
+                },
+                onFailure = { e ->
+                    _state.update { it.copy(
+                        actionInProgress = false,
+                        error = "Failed to create prescription: ${e.message}"
+                    ) }
+                }
+            )
+        }
+    }
+
 }
