@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
+import org.sammomanyi.mediaccess.features.pharmacy.presentation.PharmacistDashboardScreen
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorDashboardScreen
 
@@ -34,6 +35,10 @@ fun AdminLoginScreen() {
                 )
                 return
             }
+        StaffRole.PHARMACIST.name -> PharmacistDashboardScreen(
+            account = TODO(),
+            onLogout = TODO()
+        )
             else -> {
                 AdminDashboard(
                     account = account,

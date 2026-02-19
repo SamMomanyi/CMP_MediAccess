@@ -76,6 +76,10 @@ fun WaitingRoomScreen(
                     )
                 }
                 is QueueState.Done -> {
+                    // Check if prescription exists, then navigate
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Route.PharmacySummary)
+                    }
                     CompletedContent(onBack = onBack)
                 }
                 else -> {

@@ -59,6 +59,9 @@ import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileV
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationViewModel
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryViewModel
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.wellness.data.WellnessRepository
 import org.sammomanyi.mediaccess.features.wellness.presentation.WellnessViewModel
@@ -100,6 +103,9 @@ val sharedModule = module {
             }
         }
     }
+
+    single { PrescriptionRepository(get()) }
+    single { PharmacyQueueRepository(get()) }
 
     single { NewsService(get()) }
     // Register CoverRepository directly — no Impl needed
@@ -154,5 +160,7 @@ val sharedModule = module {
     // In Module.kt sharedModule
     viewModelOf(::CheckInViewModel)
     viewModelOf(::VerificationViewModel)
+
+    viewModelOf(::ExpenditureSummaryViewModel)
 
 }

@@ -41,6 +41,9 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.Appointment
 import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorQueueViewModel
@@ -96,6 +99,8 @@ actual val platformModule = module {
         )
     }
 
+
+
     // ── Cover request management ──────────────────────────────
     single { DesktopCoverRepository(dao = get(), firestoreClient = get()) }
     viewModelOf(::AdminCoverViewModel)
@@ -113,7 +118,7 @@ actual val platformModule = module {
     single {
         StaffFirestoreRepository(firestoreClient = get())
     }
-
+    single { PharmacyDesktopRepository(firestoreClient = get()) }
     single {
         QueueDesktopRepository(firestoreClient = get())
     }
@@ -136,4 +141,6 @@ actual val platformModule = module {
     viewModelOf(::AdminCoverViewModel)
     viewModelOf(::StaffManagementViewModel)
     viewModelOf(::VisitVerificationViewModel)
+
+
 }

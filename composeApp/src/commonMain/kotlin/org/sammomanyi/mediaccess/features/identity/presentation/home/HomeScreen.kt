@@ -114,7 +114,7 @@ fun HomeScreen(
                     onVisitClick = onNavigateToCheckIn,
                     onBenefitsClick = { showBenefitsDialog = true },
                     onSpentClick = { showSpentDialog = true },
-                    onHospitalClick = onNavigateToHospitals
+                    onHospitalClick =  onNavigateToCheckIn
                 )
             }
 
@@ -481,7 +481,8 @@ private fun CareSection(
     onVisitClick: () -> Unit,
     onBenefitsClick: () -> Unit,
     onSpentClick: () -> Unit,
-    onHospitalClick: () -> Unit
+    onHospitalClick: () -> Unit,
+
 
 ) {
     Card(

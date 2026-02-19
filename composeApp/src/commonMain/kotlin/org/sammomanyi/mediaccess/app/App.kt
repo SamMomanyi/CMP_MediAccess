@@ -23,6 +23,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginScree
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationOptionsDialog
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.welcome.WelcomeScreen
+import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryScreen
 
 @Composable
 fun App() {
@@ -151,6 +152,16 @@ fun App() {
                 LinkCoverScreen(
                     onBackClick = { navController.popBackStack() },
                     onLinkSuccess = { navController.popBackStack() }
+                )
+            }
+
+            composable<Route.PharmacySummary> {
+                ExpenditureSummaryScreen(
+                    onDone = {
+                        navController.navigate(Route.Dashboard) {
+                            popUpTo(Route.Dashboard) { inclusive = true }
+                        }
+                    }
                 )
             }
 
