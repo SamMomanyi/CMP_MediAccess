@@ -18,10 +18,12 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.core.presentation.theme.MediAccessTheme
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.identity.domain.auth.GoogleSignInResult
+import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.login.LoginScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationOptionsDialog
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.waitingroom.WaitingRoomScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.welcome.WelcomeScreen
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryScreen
 
@@ -160,6 +162,21 @@ fun App() {
                     onDone = {
                         navController.navigate(Route.Dashboard) {
                             popUpTo(Route.Dashboard) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable<Route.WaitingRoom> {
+                val checkInViewModel: CheckInViewModel = koinViewModel()
+                val state by checkInViewModel.state.collectAsStateWithLifecycle()
+
+                WaitingRoomScreen(
+                    queueState = state.queueState,
+                    onBack = { navController.navigateUp() },
+                    onNavigateToPharmacy = {  // ← ADD THIS
+                        navController.navigate(Route.PharmacySummary) {
+                            popUpTo(Route.WaitingRoom) { inclusive = true }
                         }
                     }
                 )

@@ -23,7 +23,8 @@ import org.sammomanyi.mediaccess.features.identity.presentation.checkin.QueueSta
 @Composable
 fun WaitingRoomScreen(
     queueState: QueueState,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToPharmacy: () -> Unit  // ← NEW param
 ) {
     var animatedDots by remember { mutableStateOf("") }
 
@@ -76,14 +77,13 @@ fun WaitingRoomScreen(
                     )
                 }
                 is QueueState.Done -> {
-                    // Check if prescription exists, then navigate
+                    // ✅ Navigate to pharmacy summary
                     LaunchedEffect(Unit) {
-                        navController.navigate(Route.PharmacySummary)
+                        onNavigateToPharmacy()
                     }
                     CompletedContent(onBack = onBack)
                 }
                 else -> {
-                    // Shouldn't reach here, but just in case
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
@@ -107,7 +107,6 @@ private fun WaitingContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Queue position badge
         Surface(
             modifier = Modifier.size(140.dp),
             shape = CircleShape,
@@ -141,7 +140,6 @@ private fun WaitingContent(
 
         Spacer(Modifier.height(40.dp))
 
-        // Doctor info card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -203,7 +201,6 @@ private fun WaitingContent(
 
         Spacer(Modifier.height(40.dp))
 
-        // Status message
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -243,7 +240,6 @@ private fun YourTurnContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Success icon
         Surface(
             modifier = Modifier.size(120.dp),
             shape = CircleShape,
@@ -279,7 +275,6 @@ private fun YourTurnContent(
 
         Spacer(Modifier.height(24.dp))
 
-        // Room card
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -373,20 +368,10 @@ private fun CompletedContent(onBack: () -> Unit) {
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Thank you for your visit!",
+            text = "Please proceed to pharmacy for medication",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-
-        Spacer(Modifier.height(32.dp))
-
-        Button(
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Back to Home", style = MaterialTheme.typography.titleMedium)
-        }
     }
 }

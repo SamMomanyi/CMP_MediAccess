@@ -23,6 +23,8 @@ import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
@@ -38,12 +40,16 @@ fun DoctorDashboardScreen(
 
     val queueRepository: QueueDesktopRepository = koinInject()
     val staffRepository: StaffFirestoreRepository = koinInject()
+    val prescriptionRepository: PrescriptionRepository = koinInject()
+    val pharmacyQueueRepository: PharmacyQueueRepository = koinInject()
 
     // ✅ Instantiate manually with account
     val viewModel = remember(account) {
         DoctorQueueViewModel(
             queueRepository = queueRepository,
             staffRepository = staffRepository,
+            prescriptionRepository = prescriptionRepository,
+            pharmacyQueueRepository = pharmacyQueueRepository,
             doctor = account
         )
     }

@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenditureSummaryScreen(
     onDone: () -> Unit,

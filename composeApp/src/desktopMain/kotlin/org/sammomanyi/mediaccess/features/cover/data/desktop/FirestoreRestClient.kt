@@ -10,6 +10,7 @@ import io.ktor.client.request.setBody
 import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -144,5 +145,39 @@ class FirestoreRestClient(
     private fun buildFieldsJson(fields: Map<String, String>): String {
         val entries = fields.entries.joinToString(", ") { (k, v) -> """"$k": $v""" }
         return "{$entries}"
+    }
+
+    // Add this method to FirestoreRestClient class
+
+    suspend fun getDocument(collection: String, documentId: String): Map<String, Any?>? {
+        val token = credentials.getAccessToken(httpClient)
+        val response = httpClient.get("$baseUrl/$collection/$documentId") {
+            header("Authorization", "Bearer $token")
+        }
+
+        if (response.status.value != 200) return null
+
+        val body = response.body<String>()
+        val doc = json.parseToJsonElement(body).jsonObject
+        val fields = doc["fields"]?.jsonObject ?: return null
+
+        return parseFields(fields)
+    }
+
+    // Add this method to FirestoreRestClient class
+
+    suspend fun setDocument(collection: String, documentId: String, fields: Map<String, Any?>) {
+        val token = credentials.getAccessToken(httpClient)
+        val firestoreFields = fields.mapValues { (_, value) ->
+            mapOf("stringValue" to value.toString())
+        }
+
+        val body = mapOf("fields" to firestoreFields)
+
+        httpClient.patch("$baseUrl/$collection/$documentId") {
+            header("Authorization", "Bearer $token")
+            header("Content-Type", "application/json")
+            setBody(json.encodeToString(body))
+        }
     }
 }

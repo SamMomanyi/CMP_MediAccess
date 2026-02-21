@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -182,17 +183,21 @@ fun MainScreen(
 
 
 
-            // In your NavHost:
             composable<Route.WaitingRoom> {
                 val checkInViewModel: CheckInViewModel = koinViewModel()
-                val state by checkInViewModel.state.collectAsState()
+                val state by checkInViewModel.state.collectAsStateWithLifecycle()
 
                 WaitingRoomScreen(
                     queueState = state.queueState,
-                    onBack = { navController.navigateUp() }
+                    onBack = { navController.navigateUp() },
+                    onNavigateToPharmacy = {  // ← ADD THIS
+                        navController.navigate(Route.PharmacySummary) {
+                            popUpTo(Route.WaitingRoom) { inclusive = true }
+                        }
+                    }
                 )
             }
-            // Also wire it from HomeScreen's "Link Cover" quick action button:
+
 
         }
     }

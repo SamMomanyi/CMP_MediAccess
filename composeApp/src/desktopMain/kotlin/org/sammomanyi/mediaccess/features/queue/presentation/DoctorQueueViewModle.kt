@@ -24,8 +24,7 @@ import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
 
-private val prescriptionRepository: PrescriptionRepository = get()
-private val pharmacyQueueRepository: PharmacyQueueRepository = get()
+
 data class DoctorQueueState(
     val waitingQueue: List<QueueEntry> = emptyList(),
     val currentPatient: QueueEntry? = null,
@@ -43,7 +42,9 @@ data class DoctorQueueState(
 class DoctorQueueViewModel(
     private val queueRepository: QueueDesktopRepository,
     private val staffRepository: StaffFirestoreRepository,  // ← NEW param
-    private val doctor: AdminAccountEntity
+    private val doctor: AdminAccountEntity,
+    private val prescriptionRepository: PrescriptionRepository ,
+            private val pharmacyQueueRepository: PharmacyQueueRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DoctorQueueState(

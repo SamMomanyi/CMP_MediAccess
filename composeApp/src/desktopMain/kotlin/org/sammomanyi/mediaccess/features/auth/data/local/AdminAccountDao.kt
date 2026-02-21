@@ -22,4 +22,12 @@ interface AdminAccountDao {
 
     @Query("SELECT COUNT(*) FROM admin_accounts")
     suspend fun count(): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(account: AdminAccountEntity)
+
+    @Query("DELETE FROM admin_accounts WHERE id = :id")
+    suspend fun deleteById(id: String)
 }
+
+

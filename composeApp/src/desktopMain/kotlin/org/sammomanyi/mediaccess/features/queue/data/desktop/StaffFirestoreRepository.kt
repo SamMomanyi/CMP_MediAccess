@@ -4,6 +4,7 @@ import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffAccount
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
+import java.security.MessageDigest
 
 class StaffFirestoreRepository(
     private val firestoreClient: FirestoreRestClient
@@ -73,6 +74,28 @@ class StaffFirestoreRepository(
         } catch (e: Exception) {
             println("🔴 StaffFirestoreRepository.upsertStaff error: ${e.message}")
         }
+    }
+
+    // ✅ ADD THIS METHOD - Returns Result for proper error handling
+    suspend fun createStaff(staff: StaffAccount, password: String): Result<Unit> = runCatching {
+        val passwordHash = MessageDigest.getInstance("SHA-256")
+            .digest(password.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+
+        firestoreClient.setDocument(
+            collection = "staff_accounts",
+            documentId = staff.id,
+            fields = mapOf(
+                "name" to staff.name,
+                "email" to staff.email,
+                "role" to staff.role,
+                "roomNumber" to (staff.roomNumber ?: ""),
+                "specialization" to (staff.specialization ?: ""),
+                "isOnDuty" to false,
+                "lastSeenAt" to Clock.System.now().toEpochMilliseconds(),
+                "passwordHash" to passwordHash
+            )
+        )
     }
 
     suspend fun deleteStaff(staffId: String) {

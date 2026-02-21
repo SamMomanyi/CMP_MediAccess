@@ -64,7 +64,6 @@ actual val platformModule = module {
         )
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigration(dropAllTables = true)  // Only deletes if migration fails
             .addCallback(BootstrapAdminCallback())  // Only runs on CREATE, not every launch
             .build()
     }
