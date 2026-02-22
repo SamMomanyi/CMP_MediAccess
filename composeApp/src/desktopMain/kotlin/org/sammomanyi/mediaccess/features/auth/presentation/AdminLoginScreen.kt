@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
+import org.sammomanyi.mediaccess.AdminDashboard
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.PharmacistDashboardScreen
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorDashboardScreen
@@ -35,11 +36,15 @@ fun AdminLoginScreen() {
                 )
                 return
             }
-        StaffRole.PHARMACIST.name -> PharmacistDashboardScreen(
-            account = TODO(),
-            onLogout = TODO()
-        )
+            StaffRole.PHARMACIST.name -> {
+                PharmacistDashboardScreen(
+                    account = account,  // ✅ FIXED
+                    onLogout = { viewModel.logout(account) }  // ✅ FIXED
+                )
+                return
+            }
             else -> {
+                // ADMIN or RECEPTIONIST
                 AdminDashboard(
                     account = account,
                     onLogout = { viewModel.logout(account) }
@@ -49,7 +54,7 @@ fun AdminLoginScreen() {
         }
     }
 
-    // ── Login form ────────────────────────────────────────────
+    // Login form
     var passwordVisible by remember { mutableStateOf(false) }
     var roleDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -64,7 +69,6 @@ fun AdminLoginScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Header
                 Surface(
                     modifier = Modifier.size(64.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -93,7 +97,7 @@ fun AdminLoginScreen() {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Role Selector Dropdown
+                // Role Selector
                 ExposedDropdownMenuBox(
                     expanded = roleDropdownExpanded,
                     onExpandedChange = { roleDropdownExpanded = !roleDropdownExpanded }
