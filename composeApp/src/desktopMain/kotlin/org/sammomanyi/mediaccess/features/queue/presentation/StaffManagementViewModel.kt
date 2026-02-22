@@ -15,23 +15,21 @@ import java.util.UUID
 data class StaffManagementState(
     val staffList: List<StaffAccount> = emptyList(),
     val isLoading: Boolean = false,
+    val isCreating: Boolean = false,
     val error: String? = null,
+    val successMessage: String? = null,
     val showCreateDialog: Boolean = false,
-    val formState: StaffFormState = StaffFormState()
-)
-
-data class StaffFormState(
-    val name: String = "",
-    val email: String = "",
-    val password: String = "",
-    val role: StaffRole = StaffRole.RECEPTIONIST,
-    val roomNumber: String = "",
-    val specialization: String = ""
+    val newName: String = "",
+    val newEmail: String = "",
+    val newPassword: String = "",
+    val newRole: StaffRole = StaffRole.RECEPTIONIST,
+    val newRoomNumber: String = "",
+    val newSpecialization: String = ""
 )
 
 class StaffManagementViewModel(
     private val staffRepository: StaffFirestoreRepository,
-    private val adminAccountDao: AdminAccountDao  // ← ADD THIS
+    private val adminAccountDao: AdminAccountDao
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(StaffManagementState())
@@ -41,7 +39,9 @@ class StaffManagementViewModel(
         loadStaff()
     }
 
-    fun loadStaff() {
+    fun refresh() = loadStaff()
+
+    private fun loadStaff() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             val staff = staffRepository.getAllStaff()
@@ -59,76 +59,100 @@ class StaffManagementViewModel(
     fun dismissCreateDialog() {
         _state.update { it.copy(
             showCreateDialog = false,
-            formState = StaffFormState()
+            newName = "",
+            newEmail = "",
+            newPassword = "",
+            newRole = StaffRole.RECEPTIONIST,
+            newRoomNumber = "",
+            newSpecialization = "",
+            error = null
         ) }
     }
 
-    fun updateFormField(field: String, value: Any) {
-        val current = _state.value.formState
-        val updated = when (field) {
-            "name" -> current.copy(name = value as String)
-            "email" -> current.copy(email = value as String)
-            "password" -> current.copy(password = value as String)
-            "role" -> current.copy(role = value as StaffRole)
-            "roomNumber" -> current.copy(roomNumber = value as String)
-            "specialization" -> current.copy(specialization = value as String)
-            else -> current
-        }
-        _state.update { it.copy(formState = updated) }
+    fun onNameChanged(value: String) {
+        _state.update { it.copy(newName = value) }
+    }
+
+    fun onEmailChanged(value: String) {
+        _state.update { it.copy(newEmail = value) }
+    }
+
+    fun onPasswordChanged(value: String) {
+        _state.update { it.copy(newPassword = value) }
+    }
+
+    fun onRoleChanged(value: StaffRole) {
+        _state.update { it.copy(newRole = value) }
+    }
+
+    fun onRoomChanged(value: String) {
+        _state.update { it.copy(newRoomNumber = value) }
+    }
+
+    fun onSpecializationChanged(value: String) {
+        _state.update { it.copy(newSpecialization = value) }
     }
 
     fun createStaff() {
-        val form = _state.value.formState
+        val s = _state.value
 
-        if (form.name.isBlank() || form.email.isBlank() || form.password.isBlank()) {
+        if (s.newName.isBlank() || s.newEmail.isBlank() || s.newPassword.isBlank()) {
             _state.update { it.copy(error = "Please fill all required fields") }
             return
         }
 
+        if (s.newRole == StaffRole.DOCTOR && s.newRoomNumber.isBlank()) {
+            _state.update { it.copy(error = "Room number is required for doctors") }
+            return
+        }
+
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isCreating = true, error = null) }
 
             val staffId = UUID.randomUUID().toString()
 
-            // Create staff account object (without password)
             val staffAccount = StaffAccount(
                 id = staffId,
-                name = form.name,
-                email = form.email.trim().lowercase(),
-                role = form.role.name,
-                roomNumber = form.roomNumber.takeIf { it.isNotBlank() },
-                specialization = form.specialigit status
-                        zation.takeIf { it.isNotBlank() },
+                name = s.newName,
+                email = s.newEmail.trim().lowercase(),
+                role = s.newRole.name,
+                roomNumber = s.newRoomNumber.ifBlank { "" },
+                specialization = s.newSpecialization.ifBlank { "" },
                 isOnDuty = false,
                 lastSeenAt = 0L,
-                passwordHash = ""  // Will be generated in repository
+                passwordHash = ""
             )
 
-            // 1. Create in Firestore (with password for hashing)
-            staffRepository.createStaff(staffAccount, form.password).fold(
+            staffRepository.createStaff(staffAccount, s.newPassword).fold(
                 onSuccess = {
-                    // 2. ✅ Also create in Room database (for desktop login)
-                    val passwordHash = sha256(form.password)
+                    // Also create in Room database
+                    val passwordHash = sha256(s.newPassword)
                     val adminEntity = AdminAccountEntity(
                         id = staffId,
-                        name = form.name,
-                        email = form.email.trim().lowercase(),
+                        name = s.newName,
+                        email = s.newEmail.trim().lowercase(),
                         passwordHash = passwordHash,
-                        role = form.role.name
+                        role = s.newRole.name
                     )
 
                     adminAccountDao.insert(adminEntity)
 
                     _state.update { it.copy(
-                        isLoading = false,
+                        isCreating = false,
                         showCreateDialog = false,
-                        formState = StaffFormState()
+                        successMessage = "Staff account created successfully",
+                        newName = "",
+                        newEmail = "",
+                        newPassword = "",
+                        newRole = StaffRole.RECEPTIONIST,
+                        newRoomNumber = "",
+                        newSpecialization = ""
                     ) }
                     loadStaff()
                 },
                 onFailure = { e ->
                     _state.update { it.copy(
-                        isLoading = false,
+                        isCreating = false,
                         error = "Failed to create staff: ${e.message}"
                     ) }
                 }
@@ -136,21 +160,24 @@ class StaffManagementViewModel(
         }
     }
 
-    fun deleteStaff(staffId: String) {
+    fun deleteStaff(staff: StaffAccount) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
             // Delete from both Firestore and Room
-            staffRepository.deleteStaff(staffId)
-            adminAccountDao.deleteById(staffId)  // ← Use deleteById instead of delete
+            staffRepository.deleteStaff(staff.id)
+            adminAccountDao.deleteById(staff.id)
 
-            _state.update { it.copy(isLoading = false) }
+            _state.update { it.copy(
+                isLoading = false,
+                successMessage = "${staff.name} deleted successfully"
+            ) }
             loadStaff()
         }
     }
 
-    fun dismissError() {
-        _state.update { it.copy(error = null) }
+    fun dismissFeedback() {
+        _state.update { it.copy(error = null, successMessage = null) }
     }
 
     private fun sha256(input: String): String {
