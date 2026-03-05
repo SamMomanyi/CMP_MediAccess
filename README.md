@@ -207,3 +207,4 @@ Firebase for backend infrastructure
 JetBrains for Compose Multiplatform
 Material Design for UI guidelines
 ![SmartFitness](https://github.com/user-attachments/assets/01a1e219-5fc3-46b2-af99-30b8e7c66739)
+![linkaccount](https://github.com/user-attachments/assets/8ce7a06d-26a8-4d6e-adfb-bd6e5b0563fb)
