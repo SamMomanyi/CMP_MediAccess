@@ -116,7 +116,6 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.firebase.auth)
             implementation(libs.firebase.firestore)
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1-0.6.x-compat")    // Make sure this exists!
             implementation(libs.compose.icons.extended)
 
             // Ktor
