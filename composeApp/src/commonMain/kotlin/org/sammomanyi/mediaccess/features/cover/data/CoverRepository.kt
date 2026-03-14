@@ -8,7 +8,8 @@ import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestEntity
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverLinkRequest
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus
-import java.util.UUID
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class CoverRepository(
     private val dao: CoverLinkRequestDao,
@@ -23,6 +24,7 @@ class CoverRepository(
 
     // ── Submit a new pending request ──────────────────────────
 
+    @OptIn(ExperimentalUuidApi::class)
     suspend fun submitRequest(
         userId: String,
         userEmail: String,
@@ -32,7 +34,7 @@ class CoverRepository(
     ): Result<CoverLinkRequest> {
         return try {
             val request = CoverLinkRequest(
-                id = UUID.randomUUID().toString(),
+                id = Uuid.random().toString(),
                 userId = userId,
                 userEmail = userEmail,
                 country = country,

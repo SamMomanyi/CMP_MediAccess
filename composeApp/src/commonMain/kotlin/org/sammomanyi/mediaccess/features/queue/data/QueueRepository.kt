@@ -20,6 +20,7 @@ class QueueRepository(
         val fs = firestore ?: return flowOf(null)
         return fs.collection("queue_entries")
             .where { "patientUserId" equalTo patientUserId }
+            .where { "status" notEqualTo QueueStatus.DONE.name }
             .snapshots
             .map { snapshot ->
                 snapshot.documents

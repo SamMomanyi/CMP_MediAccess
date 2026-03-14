@@ -136,6 +136,8 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(libs.ktor.client.okhttp)
+            implementation("org.slf4j:slf4j-simple:2.0.9")
+            implementation(libs.kotlinx.datetime)
 
 
         }
@@ -190,7 +192,6 @@ android {
 dependencies {
 
     debugImplementation(libs.compose.uiTooling)
-
     implementation(libs.androidx.ui.android)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.runtime.android)

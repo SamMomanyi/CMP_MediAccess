@@ -51,6 +51,19 @@ class QueueDesktopRepository(
         return try {
             val date = org.sammomanyi.mediaccess.features.queue.data.QueueRepository.todayString()
 
+            // 🔴 Prevent duplicate queue entries for the same patient
+            val existingPatientEntry = firestoreClient.getCollectionWithIds("queue_entries")
+                .map { (id, fields) -> fieldsToQueueEntry(id, fields) }
+                .firstOrNull {
+                    it.patientUserId == patientUserId &&
+                            it.date == date &&
+                            it.status != QueueStatus.DONE.name
+                }
+
+            if (existingPatientEntry != null) {
+                return Result.failure(Exception("Patient already in queue"))
+            }
+
             // Count existing WAITING entries for this doctor today to compute position
             val existingQueue = getDoctorQueue(doctor.id, date)
             val nextPosition = (existingQueue.maxOfOrNull { it.queuePosition } ?: 0) + 1
@@ -65,7 +78,10 @@ class QueueDesktopRepository(
                 doctorId = doctor.id,
                 doctorName = doctor.name,
                 roomNumber = doctor.roomNumber,
-                status = QueueStatus.WAITING.name,
+                status = if (nextPosition == 1)
+                    QueueStatus.IN_PROGRESS.name
+                else
+                    QueueStatus.WAITING.name,
                 queuePosition = nextPosition,
                 insuranceName = insuranceName,
                 memberNumber = memberNumber,
@@ -91,7 +107,10 @@ class QueueDesktopRepository(
                     "memberNumber" to entry.memberNumber,
                     "assignedAt" to entry.assignedAt,
                     "calledAt" to null,
-                    "completedAt" to null,
+                    "completedAt" to if (nextPosition == 1)
+                        Clock.System.now().toEpochMilliseconds()
+                    else
+                        null,
                     "date" to entry.date
                 )
             )

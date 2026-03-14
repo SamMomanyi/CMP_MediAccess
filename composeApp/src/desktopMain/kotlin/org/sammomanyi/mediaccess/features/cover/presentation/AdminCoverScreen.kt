@@ -466,9 +466,10 @@ private fun statusColor(status: CoverStatus) = when (status) {
     CoverStatus.REJECTED -> MaterialTheme.colorScheme.error
 }
 
+// ✅ NEW (uses Java time)
 private fun formatTimestamp(epochMillis: Long): String {
-    val instant = Instant.fromEpochMilliseconds(epochMillis)
-    val local = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    val instant = java.time.Instant.ofEpochMilli(epochMillis)
+    val local = instant.atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
     return "%d %s %d, %02d:%02d".format(
         local.dayOfMonth,
         local.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3),

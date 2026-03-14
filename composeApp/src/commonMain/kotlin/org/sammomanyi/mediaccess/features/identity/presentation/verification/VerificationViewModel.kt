@@ -12,6 +12,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.VerifyAppoint
 class VerificationViewModel(
     private val verifyAppointmentUseCase: VerifyAppointmentUseCase,
     private val appointmentRepository: AppointmentRepository
+
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(VerificationState())

@@ -10,6 +10,7 @@ import org.sammomanyi.mediaccess.features.identity.data.mappers.toEntity
 import org.sammomanyi.mediaccess.features.identity.domain.model.Appointment
 import org.sammomanyi.mediaccess.features.identity.domain.model.AppointmentStatus
 import org.sammomanyi.mediaccess.features.identity.domain.repository.AppointmentRepository
+import kotlinx.datetime.Clock
 
 class DesktopAppointmentRepositoryImpl(
     private val appointmentDao: AppointmentDao

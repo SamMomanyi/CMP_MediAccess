@@ -38,7 +38,8 @@ class DesktopCoverRepository(
             _state.value = CoverRequestsState(
                 requests = requests,
                 isLoading = false,
-                lastRefreshedAt = Clock.System.now().toEpochMilliseconds()
+                lastRefreshedAt = System.currentTimeMillis()
+                //changed from lastRefreshedAt = Clock.System.now().toEpochMilliseconds()
             )
         } catch (e: Exception) {
             _state.value = _state.value.copy(
@@ -62,7 +63,7 @@ class DesktopCoverRepository(
         note: String
     ): Result<Unit> {
         return try {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = System.currentTimeMillis()
 
             firestoreClient.updateDocument(
                 collection = "cover_requests",

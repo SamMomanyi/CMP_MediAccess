@@ -6,6 +6,7 @@ import VerifyVisitCodeUseCase
 import androidx.room.RoomDatabase
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.FirebaseOptions
+import dev.gitlive.firebase.auth.FirebaseAuth
 import dev.gitlive.firebase.auth.auth
 import dev.gitlive.firebase.firestore.firestore
 import io.ktor.client.HttpClient

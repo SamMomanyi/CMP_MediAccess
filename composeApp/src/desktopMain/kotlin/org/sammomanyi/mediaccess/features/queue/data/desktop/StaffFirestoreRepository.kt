@@ -1,6 +1,5 @@
 package org.sammomanyi.mediaccess.features.queue.data.desktop
 
-import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffAccount
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffRole
@@ -9,7 +8,6 @@ import java.security.MessageDigest
 class StaffFirestoreRepository(
     private val firestoreClient: FirestoreRestClient
 ) {
-    // Fetch all staff from Firestore
     suspend fun getAllStaff(): List<StaffAccount> {
         return try {
             val docs = firestoreClient.getCollectionWithIds("staff_accounts")
@@ -32,13 +30,10 @@ class StaffFirestoreRepository(
         }
     }
 
-    // Only returns on-duty doctors — used by receptionist doctor picker
-// Replace getOnDutyDoctors() with this:
     suspend fun getAllDoctors(): List<StaffAccount> =
         getAllStaff().filter { it.role == StaffRole.DOCTOR.name }
             .sortedBy { it.name }
 
-    // Set a staff member's duty status (called on login/logout)
     suspend fun setOnDuty(staffId: String, isOnDuty: Boolean) {
         try {
             firestoreClient.updateDocument(
@@ -46,7 +41,7 @@ class StaffFirestoreRepository(
                 documentId = staffId,
                 fields = mapOf(
                     "isOnDuty" to isOnDuty,
-                    "lastSeenAt" to Clock.System.now().toEpochMilliseconds()
+                    "lastSeenAt" to System.currentTimeMillis()  // ✅ FIXED
                 )
             )
         } catch (e: Exception) {
@@ -54,7 +49,6 @@ class StaffFirestoreRepository(
         }
     }
 
-    // Create or update a staff_accounts doc from admin
     suspend fun upsertStaff(staff: StaffAccount) {
         try {
             firestoreClient.updateDocument(
@@ -76,7 +70,6 @@ class StaffFirestoreRepository(
         }
     }
 
-    // ✅ ADD THIS METHOD - Returns Result for proper error handling
     suspend fun createStaff(staff: StaffAccount, password: String): Result<Unit> = runCatching {
         val passwordHash = MessageDigest.getInstance("SHA-256")
             .digest(password.toByteArray())
@@ -89,10 +82,10 @@ class StaffFirestoreRepository(
                 "name" to staff.name,
                 "email" to staff.email,
                 "role" to staff.role,
-                "roomNumber" to (staff.roomNumber ?: ""),
-                "specialization" to (staff.specialization ?: ""),
+                "roomNumber" to staff.roomNumber,
+                "specialization" to staff.specialization,
                 "isOnDuty" to false,
-                "lastSeenAt" to Clock.System.now().toEpochMilliseconds(),
+                "lastSeenAt" to System.currentTimeMillis(),  // ✅ FIXED
                 "passwordHash" to passwordHash
             )
         )

@@ -118,8 +118,16 @@ class VisitVerificationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isAssigning = true, assignError = null)
 
-            // ✅ result.code is the code string, result.userId is the patient ID
-            verificationClient.markCodeAsUsed(result.code)
+// 🛡️ Protect network call to prevent infinite spinner
+            try {
+                verificationClient.markCodeAsUsed(result.code)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isAssigning = false,
+                    assignError = "Failed to mark code as used. Please try again."
+                )
+                return@launch
+            }
 
             val queueResult = queueRepository.addToQueue(
                 patientUserId = result.userId,          // ✅ was result.patientId

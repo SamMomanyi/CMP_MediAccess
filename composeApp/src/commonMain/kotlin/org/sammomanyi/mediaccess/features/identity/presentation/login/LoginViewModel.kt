@@ -2,6 +2,7 @@ package org.sammomanyi.mediaccess.features.identity.presentation.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.gitlive.firebase.auth.FirebaseAuth  // ✅ ADD THIS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -12,7 +13,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.LoginUserUseC
 
 class LoginViewModel(
     private val loginUserUseCase: LoginUserUseCase,
-    private val googleSignInUseCase: GoogleSignInUseCase
+    private val googleSignInUseCase: GoogleSignInUseCase,
+    private val firebaseAuth: FirebaseAuth  // ✅ INJECT THIS
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
@@ -51,6 +53,13 @@ class LoginViewModel(
                 errorMessage = null
             )
 
+            // ✅ CRITICAL FIX: Sign out previous user first
+            try {
+                firebaseAuth.signOut()
+            } catch (e: Exception) {
+                println("Error signing out: ${e.message}")
+            }
+
             val result = loginUserUseCase(
                 email = _state.value.email.trim(),
                 password = _state.value.password
@@ -84,6 +93,13 @@ class LoginViewModel(
                 isLoading = true,
                 errorMessage = null
             )
+
+            // ✅ CRITICAL FIX: Sign out previous user first
+            try {
+                firebaseAuth.signOut()
+            } catch (e: Exception) {
+                println("Error signing out: ${e.message}")
+            }
 
             val result = googleSignInUseCase(idToken, email, displayName, photoUrl)
 
