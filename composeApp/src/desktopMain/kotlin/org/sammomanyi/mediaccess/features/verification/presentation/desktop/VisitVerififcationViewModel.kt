@@ -2,17 +2,19 @@ package org.sammomanyi.mediaccess.features.verification.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.datetime.*
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
+import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffAccount
 import org.sammomanyi.mediaccess.features.verification.data.desktop.VerifiedVisitResult
 import org.sammomanyi.mediaccess.features.verification.data.desktop.VisitVerificationRestClient
 import org.sammomanyi.mediaccess.features.verification.data.desktop.CoverVerificationStatus
+import java.time.LocalDate
 
 data class VerificationHistoryEntry(
     val patientEmail: String,
@@ -27,7 +29,7 @@ data class VisitVerificationState(
     val verifiedResult: VerifiedVisitResult? = null,
     val verifyError: String? = null,
 
-    // Doctor assignment step (shown after successful verify)
+    // Doctor assignment step
     val showDoctorPicker: Boolean = false,
     val onDutyDoctors: List<StaffAccount> = emptyList(),
     val selectedDoctor: StaffAccount? = null,
@@ -36,7 +38,11 @@ data class VisitVerificationState(
     val assignSuccess: Boolean = false,
     val assignError: String? = null,
 
-    val todayHistory: List<VerificationHistoryEntry> = emptyList()
+    val todayHistory: List<VerificationHistoryEntry> = emptyList(),
+
+    // ✅ NEW: Today's queue
+    val todaysQueue: List<QueueEntry> = emptyList(),
+    val isLoadingQueue: Boolean = false
 )
 
 class VisitVerificationViewModel(
@@ -47,6 +53,23 @@ class VisitVerificationViewModel(
 
     private val _state = MutableStateFlow(VisitVerificationState())
     val state: StateFlow<VisitVerificationState> = _state.asStateFlow()
+
+    init {
+        loadTodaysQueue()  // ✅ Load queue on start
+    }
+
+    // ✅ NEW: Load today's queue
+    private fun loadTodaysQueue() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingQueue = true)
+            val today = LocalDate.now().toString()
+            val queue = queueRepository.getQueueForDate(today)
+            _state.value = _state.value.copy(
+                todaysQueue = queue,
+                isLoadingQueue = false
+            )
+        }
+    }
 
     fun onCodeInputChanged(value: String) {
         _state.value = _state.value.copy(
@@ -67,7 +90,6 @@ class VisitVerificationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isVerifying = true, verifyError = null)
 
-            // ✅ verifyCode returns Result<VerifiedVisitResult> — unwrap with getOrNull()
             val result = verificationClient.verifyCode(code).getOrNull()
             if (result == null) {
                 _state.value = _state.value.copy(
@@ -118,22 +140,13 @@ class VisitVerificationViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isAssigning = true, assignError = null)
 
-// 🛡️ Protect network call to prevent infinite spinner
-            try {
-                verificationClient.markCodeAsUsed(result.code)
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    isAssigning = false,
-                    assignError = "Failed to mark code as used. Please try again."
-                )
-                return@launch
-            }
+            verificationClient.markCodeAsUsed(result.code)
 
             val queueResult = queueRepository.addToQueue(
-                patientUserId = result.userId,          // ✅ was result.patientId
+                patientUserId = result.userId,
                 patientName = result.patientName,
                 patientEmail = result.patientEmail,
-                visitCodeId = result.code,              // ✅ was result.visitCodeId
+                visitCodeId = result.code,
                 purpose = result.purpose,
                 doctor = doctor,
                 insuranceName = result.insuranceName ?: "",
@@ -154,6 +167,10 @@ class VisitVerificationViewModel(
                         showDoctorPicker = false,
                         todayHistory = listOf(historyEntry) + _state.value.todayHistory
                     )
+
+                    // ✅ REFRESH QUEUE AFTER ASSIGNMENT
+                    delay(500)
+                    loadTodaysQueue()
                 },
                 onFailure = { e ->
                     _state.value = _state.value.copy(
