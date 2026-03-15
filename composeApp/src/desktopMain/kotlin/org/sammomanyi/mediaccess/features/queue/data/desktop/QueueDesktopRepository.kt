@@ -139,7 +139,7 @@ class QueueDesktopRepository(
     // Doctor marks patient as done → advance next patient to IN_PROGRESS
     suspend fun markPatientDone(entryId: String, doctorId: String, date: String): Result<Unit> {
         return try {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = System.currentTimeMillis()  // ✅ Use System.currentTimeMillis()
 
             // 1. Mark this entry as DONE
             firestoreClient.updateDocument(
