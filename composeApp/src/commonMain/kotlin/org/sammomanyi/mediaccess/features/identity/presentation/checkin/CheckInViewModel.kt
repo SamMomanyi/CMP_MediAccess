@@ -16,6 +16,7 @@ import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitCode
 import org.sammomanyi.mediaccess.features.identity.domain.model.VisitPurpose
+import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GenerateVisitCodeUseCase
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetCurrentUserUseCase
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
@@ -66,7 +67,8 @@ class CheckInViewModel(
     private val generateVisitCodeUseCase: GenerateVisitCodeUseCase,
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val coverRepository: CoverRepository,
-    private val queueRepository: QueueRepository
+    private val queueRepository: QueueRepository,
+    private val identityRepository: IdentityRepository  // ✅ ADD THIS
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CheckInUiState())
@@ -121,17 +123,40 @@ class CheckInViewModel(
         viewModelScope.launch {
             _state.update { it.copy(codeState = CheckInCodeState.Generating) }
 
-            // Check if already has active queue entry
+            // ✅ CHECK 1: Already in queue?
             val activeEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
             if (activeEntry != null) {
                 _state.update { it.copy(
                     codeState = CheckInCodeState.GenerationFailed(
-                        "You already have an active check-in. Please wait for your turn."
+                        "You already have an active visit. Please complete it before generating a new code."
                     )
                 ) }
                 return@launch
             }
 
+            // ✅ CHECK 2: Already have active visit code?
+            when (val existingCodeResult = identityRepository.getActiveVisitCode(userId)) {
+                is Result.Success -> {
+                    if (existingCodeResult.data != null) {
+                        // Use existing code
+                        _state.update { it.copy(
+                            codeState = CheckInCodeState.Ready(
+                                visitCode = existingCodeResult.data,
+                                secondsRemaining = 900L
+                            ),
+                            queueState = QueueState.NotQueued
+                        ) }
+                        startCountdown(existingCodeResult.data)
+                        startQueueListener(userId)
+                        return@launch
+                    }
+                }
+                is Result.Error -> {
+                    // No active code, proceed to generate
+                }
+            }
+
+            // ✅ Generate new code
             val result = generateVisitCodeUseCase(userId, purpose)
             when (result) {
                 is Result.Success -> {
@@ -187,7 +212,7 @@ class CheckInViewModel(
 
                 _state.update { it.copy(
                     queueState = newQueueState,
-                    shouldNavigateToWaitingRoom = wasNotQueued && isNowQueued,  // ✅ Navigate on first queue entry
+                    shouldNavigateToWaitingRoom = wasNotQueued && isNowQueued,
                     triggerHaptic = isNowYourTurn && !wasAlreadyYourTurn
                 ) }
             }
