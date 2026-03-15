@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
+import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.StaffAccount
 import org.sammomanyi.mediaccess.features.verification.data.desktop.CoverVerificationStatus
 
@@ -160,28 +161,102 @@ fun VisitVerificationScreen(viewModel: VisitVerificationViewModel = koinViewMode
 
         VerticalDivider(modifier = Modifier.fillMaxHeight())
 
-        // ── Right panel: today's history ──────────────────────
+        // ── Right panel: today's queue ──────────────────────
         Column(modifier = Modifier.weight(1f).fillMaxHeight().padding(16.dp)) {
             Text("Today's Check-Ins", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
 
-            if (state.todayHistory.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
-                        Spacer(Modifier.height(8.dp))
-                        Text("No check-ins yet today", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            when {
+                state.isLoadingQueue -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(state.todayHistory) { entry ->
-                        HistoryEntryCard(entry)
+                state.todaysQueue.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.EventAvailable,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "No check-ins yet today",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(state.todaysQueue) { entry ->
+                            QueueEntryCard(entry)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun QueueEntryCard(entry: QueueEntry) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    entry.patientName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Assigned to: ${entry.doctorName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    "Room: ${entry.roomNumber}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Surface(
+                color = when (entry.status) {
+                    "WAITING" -> Color(0xFFF59E0B)
+                    "IN_PROGRESS" -> Color(0xFF0891B2)
+                    "DONE" -> Color(0xFF10B981)
+                    else -> MaterialTheme.colorScheme.surface
+                }.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    entry.status,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = when (entry.status) {
+                        "WAITING" -> Color(0xFFF59E0B)
+                        "IN_PROGRESS" -> Color(0xFF0891B2)
+                        "DONE" -> Color(0xFF10B981)
+                        else -> MaterialTheme.colorScheme.onSurface
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+
 }
 
 @Composable
