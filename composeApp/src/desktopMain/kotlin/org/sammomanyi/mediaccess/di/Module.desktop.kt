@@ -121,11 +121,15 @@ actual val platformModule = module {
     single {
         QueueDesktopRepository(firestoreClient = get())
     }
+    single { PrescriptionRepository(firestore = get()) }
+    single { PharmacyQueueRepository(firestore = get()) }
 
     // ── Visit Verification REST client ────────────────────────
     single {
         VisitVerificationRestClient(firestoreClient = get())
     }
+
+
 
     // Desktop-specific repository (no Firebase)
     singleOf(::DesktopIdentityRepositoryImpl).bind<IdentityRepository>()
@@ -140,6 +144,7 @@ actual val platformModule = module {
     viewModelOf(::AdminCoverViewModel)
     viewModelOf(::StaffManagementViewModel)
     viewModelOf(::VisitVerificationViewModel)
+    viewModelOf(::DoctorQueueViewModel)
 
 
 }
