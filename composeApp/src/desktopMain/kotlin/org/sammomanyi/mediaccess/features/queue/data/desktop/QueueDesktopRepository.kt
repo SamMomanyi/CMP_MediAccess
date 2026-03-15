@@ -63,7 +63,8 @@ class QueueDesktopRepository(
         memberNumber: String
     ): Result<QueueEntry> {
         return try {
-            val date = org.sammomanyi.mediaccess.features.queue.data.QueueRepository.todayString()
+            // ✅ USE JAVA TIME INSTEAD OF kotlinx.datetime
+            val date = java.time.LocalDate.now().toString()  // Returns "2026-03-15"
 
             // 🔴 Prevent duplicate queue entries for the same patient
             val existingPatientEntry = firestoreClient.getCollectionWithIds("queue_entries")
@@ -99,7 +100,7 @@ class QueueDesktopRepository(
                 queuePosition = nextPosition,
                 insuranceName = insuranceName,
                 memberNumber = memberNumber,
-                assignedAt = Clock.System.now().toEpochMilliseconds(),
+                assignedAt = System.currentTimeMillis(),  // ✅ Use System.currentTimeMillis()
                 date = date
             )
 
@@ -122,7 +123,7 @@ class QueueDesktopRepository(
                     "assignedAt" to entry.assignedAt,
                     "calledAt" to null,
                     "completedAt" to if (nextPosition == 1)
-                        Clock.System.now().toEpochMilliseconds()
+                        System.currentTimeMillis()  // ✅ Use System.currentTimeMillis()
                     else
                         null,
                     "date" to entry.date
