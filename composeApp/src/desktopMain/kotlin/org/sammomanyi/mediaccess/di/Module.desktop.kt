@@ -122,7 +122,7 @@ actual val platformModule = module {
         QueueDesktopRepository(firestoreClient = get())
     }
     single { PrescriptionRepository(firestore = get()) }
-    single { PharmacyQueueRepository(firestore = get()) }
+    single { PharmacyQueueRepository(firestore = get()) }git
 
     // ── Visit Verification REST client ────────────────────────
     single {
