@@ -192,7 +192,7 @@ class QueueDesktopRepository(
                 documentId = entryId,
                 fields = mapOf(
                     "status" to QueueStatus.IN_PROGRESS.name,
-                    "calledAt" to Clock.System.now().toEpochMilliseconds()
+                    "calledAt" to System.currentTimeMillis()
                 )
             )
             Result.success(Unit)
