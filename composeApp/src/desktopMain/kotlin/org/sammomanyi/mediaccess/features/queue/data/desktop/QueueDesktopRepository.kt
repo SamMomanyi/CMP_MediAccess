@@ -9,6 +9,20 @@ import java.util.UUID
 class QueueDesktopRepository(
     private val firestoreClient: FirestoreRestClient
 ) {
+    // NEW: Get all queue entries for a specific date (for receptionist view)
+    suspend fun getQueueForDate(date: String): List<QueueEntry> {
+        return try {
+            val docs = firestoreClient.getCollectionWithIds("queue_entries")
+            docs
+                .map { (id, fields) -> fieldsToQueueEntry(id, fields) }
+                .filter { it.date == date }
+                .sortedWith(compareBy({ it.status != QueueStatus.IN_PROGRESS.name }, { it.assignedAt }))
+        } catch (e: Exception) {
+            println("🔴 QueueDesktopRepository.getQueueForDate error: ${e.message}")
+            emptyList()
+        }
+    }
+
     // Get all queue entries for a specific doctor today
     suspend fun getDoctorQueue(doctorId: String, date: String): List<QueueEntry> {
         return try {
