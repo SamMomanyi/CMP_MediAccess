@@ -9,5 +9,7 @@ data class AdminAccountEntity(
     val name: String,
     val email: String,
     val passwordHash: String,
-    val role: String = "ADMIN"              // NEW: ADMIN | RECEPTIONIST | DOCTOR | PHARMACIST
+    val role: String = "ADMIN",
+    val roomNumber: String = "",
+    val specialization: String = ""
 )
