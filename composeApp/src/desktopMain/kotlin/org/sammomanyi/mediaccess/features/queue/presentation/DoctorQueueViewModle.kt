@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.koin.core.context.GlobalContext.get
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
@@ -23,8 +22,6 @@ import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepos
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
-
-
 data class DoctorQueueState(
     val waitingQueue: List<QueueEntry> = emptyList(),
     val currentPatient: QueueEntry? = null,
@@ -34,22 +31,22 @@ data class DoctorQueueState(
     val error: String? = null,
     val doctorName: String = "",
     val lastRefreshedAt: Long? = null,
-    val isAvailable: Boolean = true , // ← NEW
+    val isAvailable: Boolean = true,
     val showPrescriptionDialog: Boolean = false,
     val selectedPatientForPrescription: QueueEntry? = null
 )
 
 class DoctorQueueViewModel(
     private val queueRepository: QueueDesktopRepository,
-    private val staffRepository: StaffFirestoreRepository,  // ← NEW param
+    private val staffRepository: StaffFirestoreRepository,
     private val doctor: AdminAccountEntity,
-    private val prescriptionRepository: PrescriptionRepository ,
-            private val pharmacyQueueRepository: PharmacyQueueRepository
+    private val prescriptionRepository: PrescriptionRepository? = null,  // ✅ Optional for desktop
+    private val pharmacyQueueRepository: PharmacyQueueRepository? = null  // ✅ Optional for desktop
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DoctorQueueState(
         doctorName = doctor.name,
-        isAvailable = true  // default to available on login
+        isAvailable = true
     ))
     val state: StateFlow<DoctorQueueState> = _state.asStateFlow()
 
@@ -60,7 +57,6 @@ class DoctorQueueViewModel(
         startAutoPoll()
     }
 
-    // ✅ NEW: Toggle availability
     fun toggleAvailability() {
         viewModelScope.launch {
             val newStatus = !_state.value.isAvailable
@@ -69,10 +65,6 @@ class DoctorQueueViewModel(
         }
     }
 
-    // ... rest of the ViewModel stays the same
-
-
-    // Auto-refresh every 30 seconds (no real-time listener on desktop)
     private fun startAutoPoll() {
         autoPollJob = viewModelScope.launch {
             while (isActive) {
@@ -103,7 +95,6 @@ class DoctorQueueViewModel(
         }
     }
 
-    // Doctor taps ✓ Done — dismisses current patient, promotes next
     fun markDone() {
         val current = _state.value.currentPatient ?: return
         viewModelScope.launch {
@@ -125,7 +116,6 @@ class DoctorQueueViewModel(
         }
     }
 
-    // Doctor manually calls a specific waiting patient
     fun callPatient(entryId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(actionInProgress = true)
@@ -160,6 +150,14 @@ class DoctorQueueViewModel(
         medications: List<PrescriptionItem>,
         notes: String
     ) {
+        // ✅ Check if repositories are available (mobile only)
+        if (prescriptionRepository == null || pharmacyQueueRepository == null) {
+            _state.update { it.copy(
+                error = "Prescription feature not available on desktop"
+            ) }
+            return
+        }
+
         val patient = _state.value.selectedPatientForPrescription ?: return
         viewModelScope.launch {
             _state.update { it.copy(actionInProgress = true) }
@@ -181,7 +179,6 @@ class DoctorQueueViewModel(
 
             prescriptionRepository.createPrescription(prescription).fold(
                 onSuccess = { prescriptionId ->
-                    // Add to pharmacy queue
                     pharmacyQueueRepository.addToPharmacyQueue(
                         patientUserId = patient.patientUserId,
                         patientName = patient.patientName,
@@ -190,7 +187,6 @@ class DoctorQueueViewModel(
                         date = QueueRepository.todayString()
                     )
 
-                    // Mark patient as done in doctor queue
                     queueRepository.markPatientDone(patient.id, doctor.id, QueueRepository.todayString())
 
                     _state.update { it.copy(
@@ -209,5 +205,4 @@ class DoctorQueueViewModel(
             )
         }
     }
-
 }

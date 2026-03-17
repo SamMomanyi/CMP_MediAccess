@@ -87,8 +87,8 @@ actual val platformModule = module {
     single { get<MediAccessAdminDatabase>().coverLinkRequestDao }
 
 
-    // Stub Firebase Firestore - throws error when used
-    single { Firebase.firestore }
+
+    single<FirebaseFirestore?> { null }
 
     // CoverRepository on desktop: no Firestore, pass null or a no-op
     single {
@@ -121,8 +121,8 @@ actual val platformModule = module {
     single {
         QueueDesktopRepository(firestoreClient = get())
     }
-    single { PrescriptionRepository(firestore = get()) }
-    single { PharmacyQueueRepository(firestore = get()) }git
+//    single { PrescriptionRepository(firestore = get()) }
+//    single { PharmacyQueueRepository(firestore = get()) }
 
     // ── Visit Verification REST client ────────────────────────
     single {
@@ -145,6 +145,7 @@ actual val platformModule = module {
     viewModelOf(::StaffManagementViewModel)
     viewModelOf(::VisitVerificationViewModel)
     viewModelOf(::DoctorQueueViewModel)
+
 
 
 }

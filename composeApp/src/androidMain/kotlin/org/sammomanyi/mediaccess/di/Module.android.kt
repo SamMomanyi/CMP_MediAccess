@@ -26,6 +26,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.Appointment
 import org.sammomanyi.mediaccess.features.identity.domain.repository.HospitalRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRepository
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 
 actual val platformModule = module {
     single<RoomDatabase.Builder<MediAccessDatabase>> {
@@ -66,10 +68,12 @@ actual val platformModule = module {
         )
     }
     single<GoogleSignInProvider> { GoogleSignInHelper(get(), get()) }
-
+    single { PrescriptionRepository(firestore = get()) }
+    single { PharmacyQueueRepository(firestore = get()) }
     // Real repository with Firebase
     singleOf(::IdentityRepositoryImpl).bind<IdentityRepository>()
     singleOf(::RecordsRepositoryImpl).bind<RecordsRepository>()
     singleOf(::HospitalRepositoryImpl).bind<HospitalRepository>()
     singleOf(::AppointmentRepositoryImpl).bind<AppointmentRepository>()
+
 }

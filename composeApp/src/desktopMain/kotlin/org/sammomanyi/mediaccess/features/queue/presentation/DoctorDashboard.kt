@@ -40,16 +40,15 @@ fun DoctorDashboardScreen(
 
     val queueRepository: QueueDesktopRepository = koinInject()
     val staffRepository: StaffFirestoreRepository = koinInject()
-    val prescriptionRepository: PrescriptionRepository = koinInject()
-    val pharmacyQueueRepository: PharmacyQueueRepository = koinInject()
+
 
     // ✅ Instantiate manually with account
     val viewModel = remember(account) {
         DoctorQueueViewModel(
             queueRepository = queueRepository,
             staffRepository = staffRepository,
-            prescriptionRepository = prescriptionRepository,
-            pharmacyQueueRepository = pharmacyQueueRepository,
+            prescriptionRepository = null,
+            pharmacyQueueRepository = null,
             doctor = account
         )
     }
