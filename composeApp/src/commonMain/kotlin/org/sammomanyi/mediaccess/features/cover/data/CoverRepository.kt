@@ -2,6 +2,7 @@ package org.sammomanyi.mediaccess.features.cover.data
 
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
@@ -12,15 +13,37 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class CoverRepository(
-    private val dao: CoverLinkRequestDao,
+    private val dao: CoverLinkRequestDao?,  // ✅ Make nullable - desktop only
     private val firestore: FirebaseFirestore?
 ) {
     // ── User: get their own requests ──────────────────────────
 
-    fun getUserRequests(userId: String): Flow<List<CoverLinkRequest>> =
-        dao.getRequestsForUser(userId).map { list ->
+    fun getUserRequests(userId: String): Flow<List<CoverLinkRequest>> {
+        // ✅ Mobile: use Firestore only
+        if (dao == null) {
+            return flow {
+                try {
+                    val snapshot = firestore?.collection("cover_requests")
+                        ?.where { "userId" equalTo userId }
+                        ?.get()
+
+                    val requests = snapshot?.documents?.map { doc ->
+                        doc.data<CoverLinkRequestEntity>().toDomain()
+                    } ?: emptyList()
+
+                    emit(requests)
+                } catch (e: Exception) {
+                    println("🔴 Error fetching cover requests: ${e.message}")
+                    emit(emptyList())
+                }
+            }
+        }
+
+        // ✅ Desktop: use Room DAO
+        return dao.getRequestsForUser(userId).map { list ->
             list.map { it.toDomain() }
         }
+    }
 
     // ── Submit a new pending request ──────────────────────────
 
@@ -46,10 +69,10 @@ class CoverRepository(
 
             val entity = request.toEntity()
 
-            // Save locally first
-            dao.upsert(entity)
+            // ✅ Save locally ONLY on desktop
+            dao?.upsert(entity)
 
-            // Sync to Firestore — gitlive suspend functions need no .await()
+            // ✅ Always sync to Firestore
             firestore?.collection("cover_requests")
                 ?.document(request.id)
                 ?.set(entity.toFirestoreMap())
@@ -63,11 +86,51 @@ class CoverRepository(
 
     // ── Admin: get all requests ───────────────────────────────
 
-    fun getAllRequests(): Flow<List<CoverLinkRequest>> =
-        dao.getAllRequests().map { list -> list.map { it.toDomain() } }
+    fun getAllRequests(): Flow<List<CoverLinkRequest>> {
+        // ✅ Mobile: use Firestore
+        if (dao == null) {
+            return flow {
+                try {
+                    val snapshot = firestore?.collection("cover_requests")?.get()
+                    val requests = snapshot?.documents?.map { doc ->
+                        doc.data<CoverLinkRequestEntity>().toDomain()
+                    } ?: emptyList()
+                    emit(requests)
+                } catch (e: Exception) {
+                    println("🔴 Error fetching all requests: ${e.message}")
+                    emit(emptyList())
+                }
+            }
+        }
 
-    fun getPendingRequests(): Flow<List<CoverLinkRequest>> =
-        dao.getPendingRequests().map { list -> list.map { it.toDomain() } }
+        // ✅ Desktop: use Room DAO
+        return dao.getAllRequests().map { list -> list.map { it.toDomain() } }
+    }
+
+    fun getPendingRequests(): Flow<List<CoverLinkRequest>> {
+        // ✅ Mobile: use Firestore
+        if (dao == null) {
+            return flow {
+                try {
+                    val snapshot = firestore?.collection("cover_requests")
+                        ?.where { "status" equalTo CoverStatus.PENDING.name }
+                        ?.get()
+
+                    val requests = snapshot?.documents?.map { doc ->
+                        doc.data<CoverLinkRequestEntity>().toDomain()
+                    } ?: emptyList()
+
+                    emit(requests)
+                } catch (e: Exception) {
+                    println("🔴 Error fetching pending requests: ${e.message}")
+                    emit(emptyList())
+                }
+            }
+        }
+
+        // ✅ Desktop: use Room DAO
+        return dao.getPendingRequests().map { list -> list.map { it.toDomain() } }
+    }
 
     // ── Admin: approve / reject ───────────────────────────────
 
@@ -84,9 +147,11 @@ class CoverRepository(
     ): Result<Unit> {
         return try {
             val now = Clock.System.now().toEpochMilliseconds()
-            dao.updateStatus(id, status.name, now, note)
 
-            // gitlive update takes vararg Pair<String, Any?>
+            // ✅ Update locally ONLY on desktop
+            dao?.updateStatus(id, status.name, now, note)
+
+            // ✅ Always update Firestore
             firestore?.collection("cover_requests")
                 ?.document(id)
                 ?.update(
@@ -101,20 +166,17 @@ class CoverRepository(
         }
     }
 
-    // ── Sync from Firestore to local Room ─────────────────────
-
-
-    // ── FIXED SYNC FUNCTION ─────────────────────────────────────
-
+    // ── Sync from Firestore to local Room (desktop only) ──────
 
     suspend fun syncFromFirestore(userId: String) {
+        // ✅ Skip if no DAO (mobile)
+        if (dao == null) return
+
         try {
-            // gitlive where clause syntax
             val snapshot = firestore?.collection("cover_requests")
                 ?.where { "userId" equalTo userId }
                 ?.get()
 
-            // gitlive: doc.data<T>() instead of doc.toObject(T::class.java)
             snapshot?.documents?.forEach { doc ->
                 val entity = doc.data<CoverLinkRequestEntity>()
                 dao.upsert(entity)
@@ -123,7 +185,6 @@ class CoverRepository(
             println("🔴 CoverRepository.sync error: ${e.message}")
         }
     }
-    
 }
 
 // ── Mappers ───────────────────────────────────────────────────
