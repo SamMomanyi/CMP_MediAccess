@@ -10,6 +10,6 @@ data class AdminAccountEntity(
     val email: String,
     val passwordHash: String,
     val role: String = "ADMIN",
-    val roomNumber: String = "",
-    val specialization: String = ""
+    val roomNumber: String? = null,
+    val specialization: String? = null
 )

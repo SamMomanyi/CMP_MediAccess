@@ -16,9 +16,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+//import kotlinx.datetime.Instant
+//import kotlinx.datetime.TimeZone
+//import kotlinx.datetime.toLocalDateTime
+
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 import org.koin.compose.getKoin
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -115,10 +120,14 @@ fun DoctorDashboardScreen(
                     }
 
                     state.lastRefreshedAt?.let { ts ->
-                        val time = Instant.fromEpochMilliseconds(ts)
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        // ✅ Using java.time instead of kotlinx
+                        val instant = Instant.ofEpochMilli(ts)
+                        val zonedDateTime = instant.atZone(ZoneId.of("Africa/Nairobi"))
+
+                        val timeStr = String.format("%02d:%02d", zonedDateTime.hour, zonedDateTime.minute)
+
                         Text(
-                            "Updated ${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
+                            "Updated $timeStr",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -361,9 +370,10 @@ private fun WaitingPatientCard(
 @Composable
 private fun CompletedPatientCard(entry: QueueEntry) {
     val completedTime = entry.completedAt?.let { ts ->
-        val dt = Instant.fromEpochMilliseconds(ts)
-            .toLocalDateTime(TimeZone.currentSystemDefault())
-        "${dt.hour.toString().padStart(2, '0')}:${dt.minute.toString().padStart(2, '0')}"
+        // ✅ Standard JVM way to format time from a Long timestamp
+        val instant = Instant.ofEpochMilli(ts)
+        val zonedDateTime = instant.atZone(ZoneId.of("Africa/Nairobi"))
+        String.format("%02d:%02d", zonedDateTime.hour, zonedDateTime.minute)
     } ?: "--:--"
 
     Surface(

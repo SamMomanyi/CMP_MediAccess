@@ -13,7 +13,7 @@ import java.util.UUID
 
 @Database(
     entities = [AdminAccountEntity::class, CoverLinkRequestEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class MediAccessAdminDatabase : RoomDatabase() {
@@ -43,6 +43,8 @@ class BootstrapAdminCallback : RoomDatabase.Callback() {
             statement.bindText(3, "admin@hospital.com")
             statement.bindText(4, hash)
             statement.bindText(5, "ADMIN")
+           // statement.bindNull(6)
+           // statement.bindNull(7)
             statement.step()
         }
 

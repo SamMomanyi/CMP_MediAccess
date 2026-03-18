@@ -102,4 +102,83 @@ class PharmacyDesktopRepository(
             )
         )
     }
+
+    // ⬇️ ADD THESE TWO FUNCTIONS TO THE BOTTOM OF THE CLASS ⬇️
+
+    suspend fun createPrescription(prescription: Prescription): Result<String> {
+        return try {
+            val id = java.util.UUID.randomUUID().toString()
+            val presWithId = prescription.copy(id = id)
+
+            // Convert medications list to a list of maps for Firestore JSON
+            val medsList = presWithId.medications.map { med ->
+                mapOf(
+                    "medicationName" to med.medicationName,
+                    "dosage" to med.dosage,
+                    "frequency" to med.frequency,
+                    "duration" to med.duration,
+                    "quantity" to med.quantity,
+                    "unitPrice" to med.unitPrice
+                )
+            }
+
+            firestoreClient.updateDocument(
+                collection = "prescriptions",
+                documentId = id,
+                fields = mapOf(
+                    "id" to id,
+                    "patientUserId" to presWithId.patientUserId,
+                    "patientName" to presWithId.patientName,
+                    "patientEmail" to presWithId.patientEmail,
+                    "doctorId" to presWithId.doctorId,
+                    "doctorName" to presWithId.doctorName,
+                    "queueEntryId" to presWithId.queueEntryId,
+                    "medications" to medsList,
+                    "notes" to presWithId.notes,
+                    "status" to presWithId.status.name,
+                    "createdAt" to presWithId.createdAt,
+                    "date" to presWithId.date
+                )
+            )
+            Result.success(id)
+        } catch (e: Exception) {
+            println("🔴 Error creating prescription: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun addToPharmacyQueue(
+        patientUserId: String,
+        patientName: String,
+        patientEmail: String,
+        prescriptionId: String,
+        date: String
+    ): Result<Unit> {
+        return try {
+            val currentQueue = getPharmacyQueue(date)
+            val nextPosition = (currentQueue.maxOfOrNull { it.queuePosition } ?: 0) + 1
+            val id = java.util.UUID.randomUUID().toString()
+
+            firestoreClient.updateDocument(
+                collection = "pharmacy_queue",
+                documentId = id,
+                fields = mapOf(
+                    "id" to id,
+                    "patientUserId" to patientUserId,
+                    "patientName" to patientName,
+                    "patientEmail" to patientEmail,
+                    "prescriptionId" to prescriptionId,
+                    "queuePosition" to nextPosition,
+                    "status" to org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyStatus.WAITING.name,
+                    "assignedAt" to System.currentTimeMillis(),
+                    "date" to date
+                )
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            println("🔴 Error adding to pharmacy queue: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
 }

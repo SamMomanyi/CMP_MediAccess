@@ -15,8 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import java.time.Instant
+import java.time.ZoneId
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Instant
+//import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
@@ -80,10 +82,13 @@ fun PharmacistDashboardScreen(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     state.lastRefreshedAt?.let { ts ->
-                        val time = Instant.fromEpochMilliseconds(ts)
-                            .toLocalDateTime(TimeZone.currentSystemDefault())
+                        // ✅ Use standard Java time
+                        val instant = Instant.ofEpochMilli(ts)
+                        val zonedDateTime = instant.atZone(ZoneId.of("Africa/Nairobi"))
+                        val timeStr = String.format("%02d:%02d", zonedDateTime.hour, zonedDateTime.minute)
+
                         Text(
-                            "Updated ${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}",
+                            "Updated $timeStr",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

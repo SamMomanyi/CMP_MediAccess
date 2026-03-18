@@ -19,9 +19,13 @@ class QueueRepository(
     // Used by mobile CheckInScreen to get live position + status
     fun observePatientQueueEntry(patientUserId: String): Flow<QueueEntry?> {
         val fs = firestore ?: return flowOf(null)
+
+        // We only want today's entry for this patient
+        val today = todayString()
+
         return fs.collection("queue_entries")
             .where { "patientUserId" equalTo patientUserId }
-            .where { "status" notEqualTo QueueStatus.DONE.name }
+            .where { "date" equalTo today } // ✅ Safe index: just user + today's date
             .snapshots
             .map { snapshot ->
                 snapshot.documents
@@ -50,8 +54,8 @@ class QueueRepository(
                             null
                         }
                     }
-                    .filter { it.status != QueueStatus.DONE.name }
-                    .minByOrNull { it.queuePosition }  // Their most recent active entry
+                    // ✅ REMOVED the "!= DONE" filter. The UI NEEDS to see the DONE status!
+                    .maxByOrNull { it.assignedAt }  // Get their latest entry for today
             }
     }
 
