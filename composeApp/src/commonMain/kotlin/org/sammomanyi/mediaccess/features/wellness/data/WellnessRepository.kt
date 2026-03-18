@@ -14,6 +14,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.wellness.domain.model.Habit
 import org.sammomanyi.mediaccess.features.wellness.domain.model.WellnessData
 import org.sammomanyi.mediaccess.features.wellness.domain.model.defaultHabits
@@ -40,7 +41,7 @@ class WellnessRepository(
     val wellnessData: Flow<WellnessData> = dataStore.data
         .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
         .map { prefs ->
-            val today = getCurrentDate()
+            val today = DateProvider.today()
             val savedDate = prefs[WELLNESS_DATE] ?: ""
 
             // Reset daily stats if date changed
@@ -112,8 +113,7 @@ class WellnessRepository(
     }
 
     private fun getCurrentDate(): String {
-        val now = Clock.System.now()
-        val date = now.toLocalDateTime(TimeZone.currentSystemDefault())
-        return "${date.year}-${date.monthNumber}-${date.dayOfMonth}"
+        val date = DateProvider.today()
+        return date
     }
 }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
@@ -62,7 +63,7 @@ class VisitVerificationViewModel(
     private fun loadTodaysQueue() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoadingQueue = true)
-            val today = LocalDate.now().toString()
+            val today = DateProvider.today()
             val queue = queueRepository.getQueueForDate(today)
             _state.value = _state.value.copy(
                 todaysQueue = queue,

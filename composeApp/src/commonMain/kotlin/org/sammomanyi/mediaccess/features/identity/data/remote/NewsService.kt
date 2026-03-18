@@ -7,6 +7,7 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.identity.domain.model.Article
 import org.sammomanyi.mediaccess.features.identity.domain.model.HealthNewsResponse
 
@@ -106,8 +107,6 @@ class NewsService(private val client: HttpClient) {
     }
 
     private fun getCurrentDate(): String {
-        val now = Clock.System.now()
-        val date = now.toLocalDateTime(TimeZone.currentSystemDefault())
-        return "${date.year}-${date.monthNumber}-${date.dayOfMonth}"
+        return DateProvider.today()
     }
 }

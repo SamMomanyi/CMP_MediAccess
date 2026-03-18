@@ -1,6 +1,7 @@
 package org.sammomanyi.mediaccess.features.queue.data.desktop
 
 import kotlinx.datetime.Clock
+import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
@@ -64,7 +65,7 @@ class QueueDesktopRepository(
     ): Result<QueueEntry> {
         return try {
             // ✅ USE JAVA TIME INSTEAD OF kotlinx.datetime
-            val date = java.time.LocalDate.now().toString()  // Returns "2026-03-15"
+            val date = DateProvider.today() // Returns "2026-03-15"
 
             // 🔴 Prevent duplicate queue entries for the same patient
             val existingPatientEntry = firestoreClient.getCollectionWithIds("queue_entries")
@@ -121,11 +122,10 @@ class QueueDesktopRepository(
                     "insuranceName" to entry.insuranceName,
                     "memberNumber" to entry.memberNumber,
                     "assignedAt" to entry.assignedAt,
-                    "calledAt" to null,
-                    "completedAt" to if (nextPosition == 1)
-                        System.currentTimeMillis()  // ✅ Use System.currentTimeMillis()
-                    else
-                        null,
+                    "calledAt" to if (nextPosition == 1)
+                        System.currentTimeMillis()
+                    else null,
+                    "completedAt" to null,
                     "date" to entry.date
                 )
             )

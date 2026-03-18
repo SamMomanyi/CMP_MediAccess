@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
@@ -57,11 +58,8 @@ class QueueRepository(
     // Helper to get today's date string
     companion object {
         fun todayString(): String {
-            val now = Clock.System.now()
-            val date = now.toLocalDateTime(TimeZone.currentSystemDefault())
-            return "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${
-                date.dayOfMonth.toString().padStart(2, '0')
-            }"
+            return DateProvider.today()
+
         }
     }
 }
