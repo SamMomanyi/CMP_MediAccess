@@ -30,6 +30,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
@@ -45,15 +46,14 @@ fun DoctorDashboardScreen(
 
     val queueRepository: QueueDesktopRepository = koinInject()
     val staffRepository: StaffFirestoreRepository = koinInject()
-
+    val pharmacyDesktopRepository: PharmacyDesktopRepository = koinInject()
 
     // ✅ Instantiate manually with account
     val viewModel = remember(account) {
         DoctorQueueViewModel(
             queueRepository = queueRepository,
             staffRepository = staffRepository,
-            prescriptionRepository = null,
-            pharmacyQueueRepository = null,
+            pharmacyDesktopRepository = pharmacyDesktopRepository,
             doctor = account
         )
     }
@@ -162,7 +162,8 @@ fun DoctorDashboardScreen(
                     CurrentPatientCard(
                         patient = state.currentPatient!!,
                         isActionInProgress = state.actionInProgress,
-                        onMarkDone = viewModel::markDone
+                        onMarkDone = viewModel::markDone,
+                        onPrescribe = { viewModel.showPrescriptionDialog(state.currentPatient!!) }
                     )
                 } else {
                     Surface(
@@ -275,7 +276,8 @@ fun DoctorDashboardScreen(
 private fun CurrentPatientCard(
     patient: QueueEntry,
     isActionInProgress: Boolean,
-    onMarkDone: () -> Unit
+    onMarkDone: () -> Unit,
+    onPrescribe: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -299,19 +301,38 @@ private fun CurrentPatientCard(
                 InfoChip(label = "No. ${patient.memberNumber}")
             }
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onMarkDone,
-                enabled = !isActionInProgress,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                shape = RoundedCornerShape(10.dp)
+// REPLACE the single "Mark Done" button inside CurrentPatientCard with this:
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (isActionInProgress) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                // Prescribe Button
+                OutlinedButton(
+                    onClick = { onPrescribe() }, // You will need to add onPrescribe to the function parameters
+                    enabled = !isActionInProgress,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Medication, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("✓ Done — Call Next Patient", fontWeight = FontWeight.Bold)
+                    Text("Prescribe", fontWeight = FontWeight.Bold)
+                }
+
+                // Done Button
+                Button(
+                    onClick = onMarkDone,
+                    enabled = !isActionInProgress,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    if (isActionInProgress) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Finish", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

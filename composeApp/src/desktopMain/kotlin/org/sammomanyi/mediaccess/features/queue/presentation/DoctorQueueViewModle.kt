@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionItem
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionStatus
@@ -40,8 +41,8 @@ class DoctorQueueViewModel(
     private val queueRepository: QueueDesktopRepository,
     private val staffRepository: StaffFirestoreRepository,
     private val doctor: AdminAccountEntity,
-    private val prescriptionRepository: PrescriptionRepository? = null,  // ✅ Optional for desktop
-    private val pharmacyQueueRepository: PharmacyQueueRepository? = null  // ✅ Optional for desktop
+    private val pharmacyDesktopRepository : PharmacyDesktopRepository ? = null
+
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DoctorQueueState(
@@ -146,15 +147,9 @@ class DoctorQueueViewModel(
         ) }
     }
 
-    fun createPrescription(
-        medications: List<PrescriptionItem>,
-        notes: String
-    ) {
-        // ✅ Check if repositories are available (mobile only)
-        if (prescriptionRepository == null || pharmacyQueueRepository == null) {
-            _state.update { it.copy(
-                error = "Prescription feature not available on desktop"
-            ) }
+    fun createPrescription(medications: List<PrescriptionItem>, notes: String) {
+        if (pharmacyDesktopRepository == null) {
+            _state.update { it.copy(error = "Pharmacy connection not injected properly") }
             return
         }
 
@@ -177,16 +172,17 @@ class DoctorQueueViewModel(
                 date = QueueRepository.todayString()
             )
 
-            prescriptionRepository.createPrescription(prescription).fold(
+            pharmacyDesktopRepository.createPrescription(prescription).fold(
                 onSuccess = { prescriptionId ->
-                    pharmacyQueueRepository.addToPharmacyQueue(
+                    // Add to Pharmacy Queue
+                    pharmacyDesktopRepository.addToPharmacyQueue(
                         patientUserId = patient.patientUserId,
                         patientName = patient.patientName,
                         patientEmail = patient.patientEmail,
                         prescriptionId = prescriptionId,
                         date = QueueRepository.todayString()
                     )
-
+                    // End Doctor Consultation
                     queueRepository.markPatientDone(patient.id, doctor.id, QueueRepository.todayString())
 
                     _state.update { it.copy(
@@ -197,10 +193,7 @@ class DoctorQueueViewModel(
                     refresh()
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(
-                        actionInProgress = false,
-                        error = "Failed to create prescription: ${e.message}"
-                    ) }
+                    _state.update { it.copy(actionInProgress = false, error = "Failed to create prescription: ${e.message}") }
                 }
             )
         }
