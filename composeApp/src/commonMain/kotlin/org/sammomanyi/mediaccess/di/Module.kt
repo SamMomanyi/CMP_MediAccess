@@ -110,7 +110,7 @@ val sharedModule = module {
 
     single { NewsService(get()) }
     // Register CoverRepository directly — no Impl needed
-    single { CoverRepository(dao = null, firestore = get()) }  // ✅ Mobile: no DAO
+    single { CoverRepository(dao = null, firestore = get()) }
     single { QueueRepository(get()) }
     // 2. DAOs
     single { get<MediAccessDatabase>().userDao }

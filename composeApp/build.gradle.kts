@@ -57,6 +57,12 @@ kotlin {
         val desktopMain by getting
 
         androidMain.dependencies {
+
+            implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+            implementation("com.google.firebase:firebase-auth-ktx")
+            implementation("com.google.firebase:firebase-firestore-ktx")
+            implementation("com.google.firebase:firebase-common-ktx")
+
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
 //koin

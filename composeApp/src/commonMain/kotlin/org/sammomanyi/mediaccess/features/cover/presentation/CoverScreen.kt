@@ -68,12 +68,22 @@ fun CoverScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
-                            IconButton(onClick = onNavigateToLinkCover) {
-                                Icon(
-                                    Icons.Default.AddCircle,
-                                    contentDescription = "Add Cover",
-                                    tint = MaterialTheme.colorScheme.secondary
-                                )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                // ✅ ADD REFRESH BUTTON
+                                IconButton(onClick = { viewModel.refresh() }) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Refresh",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(onClick = onNavigateToLinkCover) {
+                                    Icon(
+                                        Icons.Default.AddCircle,
+                                        contentDescription = "Add Cover",
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
                             }
                         }
                     }

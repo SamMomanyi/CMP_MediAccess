@@ -16,33 +16,43 @@ class CoverViewModel(
     val state = _state.asStateFlow()
 
     init {
-        loadProfile()
+        loadCoverRequests()
     }
 
-    private fun loadProfile() {
+    private fun loadCoverRequests() {
         viewModelScope.launch {
-            getProfileUseCase().collectLatest { user ->
-                user?.let {
-                    _state.update { s ->
-                        s.copy(
-                            userEmail = user.email ?: "",
-                            userId = user.id ?: "",
-                            isLoading = false
-                        )
-                    }
+            // ✅ Get current user once
+            val user = getProfileUseCase().firstOrNull()
 
-                    // Pull latest status from Firestore into Room first
-                    coverRepository.syncFromFirestore(user.id ?: "")
-
-                    coverRepository.getUserRequests(user.id ?: "")
-                        .collectLatest { requests ->
-                            _state.update { s ->
-                                s.copy(requests = requests, isLoading = false)
-                            }
-                        }
-                }
+            if (user == null) {
+                _state.update { it.copy(isLoading = false) }
+                return@launch
             }
+
+            _state.update { it.copy(
+                userEmail = user.email ?: "",
+                userId = user.id ?: "",
+                isLoading = true
+            ) }
+
+            // ✅ Listen to real-time updates
+            coverRepository.getUserRequests(user.id ?: "")
+                .catch { e ->
+                    println("🔴 Error loading cover requests: ${e.message}")
+                    _state.update { it.copy(isLoading = false) }
+                }
+                .collect { requests ->
+                    _state.update { it.copy(
+                        requests = requests,
+                        isLoading = false
+                    ) }
+                }
         }
+    }
+
+    // ✅ Manual refresh (optional but nice to have)
+    fun refresh() {
+        loadCoverRequests()
     }
 
     fun onAction(action: CoverAction) {
