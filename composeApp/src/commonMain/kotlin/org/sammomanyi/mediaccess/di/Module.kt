@@ -60,6 +60,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.profile.ProfileV
 import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationViewModel
+import org.sammomanyi.mediaccess.features.more.presentation.MoreViewModel
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryViewModel
@@ -84,6 +85,8 @@ val sharedModule = module {
     // 1. Core Services (Networking & DB)
     single { getRoomDatabase(get<RoomDatabase.Builder<MediAccessDatabase>>()) }
 
+    // In your Koin module file
+    single { MoreViewModel(get(), get(), onLogoutSuccess = {}) }
     // DataStore & Theme
     single { createDataStore() }
     single { ThemeRepository(get()) }

@@ -1,4 +1,4 @@
-package org.sammomanyi.mediaccess.features.more.presentation
+package org.sammomanyi.mediaccess.features.identity.presentation.more.presentation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import org.sammomanyi.mediaccess.features.identity.presentation.more.presentation.MoreAction
+import org.sammomanyi.mediaccess.features.identity.domain.model.User
+import org.sammomanyi.mediaccess.features.more.presentation.MoreViewModel
 
 @Composable
 fun MoreScreen(
@@ -193,7 +194,7 @@ fun MoreScreen(
 
 @Composable
 private fun MoreHeader(
-    user: org.sammomanyi.mediaccess.features.identity.domain.model.User?,
+    user: User?,
     isDarkMode: Boolean,
     onThemeToggle: () -> Unit
 ) {

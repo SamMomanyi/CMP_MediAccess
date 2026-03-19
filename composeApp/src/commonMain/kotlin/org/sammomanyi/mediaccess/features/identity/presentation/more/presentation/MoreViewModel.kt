@@ -5,13 +5,13 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetProfileUseCase
-import org.sammomanyi.mediaccess.core.data.ThemePreferences
+import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.more.presentation.MoreAction
 import org.sammomanyi.mediaccess.features.identity.presentation.more.presentation.MoreState
 
 class MoreViewModel(
     private val getProfileUseCase: GetProfileUseCase,
-    private val themePreferences: ThemePreferences,
+    private val themeViewModel: ThemeViewModel,
     private val onLogoutSuccess: () -> Unit
 ) : ViewModel() {
 
@@ -33,7 +33,7 @@ class MoreViewModel(
 
     private fun observeTheme() {
         viewModelScope.launch {
-            themePreferences.isDarkMode.collectLatest { isDark ->
+            themeViewModel.isDarkMode.collectLatest { isDark ->
                 _state.update { it.copy(isDarkMode = isDark) }
             }
         }
@@ -42,9 +42,7 @@ class MoreViewModel(
     fun onAction(action: MoreAction) {
         when (action) {
             MoreAction.OnToggleTheme -> {
-                viewModelScope.launch {
-                    themePreferences.toggleTheme()
-                }
+                themeViewModel.toggleTheme()
             }
             MoreAction.OnHelpCenter -> {
                 println("✅ Opening Help Center")

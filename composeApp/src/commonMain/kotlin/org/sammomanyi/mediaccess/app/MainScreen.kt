@@ -21,7 +21,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.checkin.CheckInV
 import org.sammomanyi.mediaccess.features.identity.presentation.checkin.QueueState
 import org.sammomanyi.mediaccess.features.identity.presentation.home.HomeScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.link_cover.LinkCoverScreen
-import org.sammomanyi.mediaccess.features.identity.presentation.more.MoreScreen
+import org.sammomanyi.mediaccess.features.identity.presentation.more.presentation.MoreScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.notifications.NotificationsScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.personal.PersonalScreen
 import org.sammomanyi.mediaccess.features.identity.presentation.waitingroom.WaitingRoomScreen
