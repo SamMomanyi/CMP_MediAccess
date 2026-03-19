@@ -1,8 +1,11 @@
 package org.sammomanyi.mediaccess.features.identity.presentation.personal
 
 sealed interface PersonalAction {
-    data object OnEditProfile : PersonalAction
-    data object OnAddRecoveryEmail : PersonalAction
-    data object OnAddRecoveryPhone : PersonalAction
-    data object OnConfirmTopics : PersonalAction
+    data class OnEditProfile(val newName: String) : PersonalAction
+    data class OnAddRecoveryEmail(val email: String) : PersonalAction
+    data class OnRemoveRecoveryEmail(val email: String) : PersonalAction
+    data class OnAddRecoveryPhone(val phone: String) : PersonalAction
+    data class OnRemoveRecoveryPhone(val phone: String) : PersonalAction
+    data class OnToggleTopic(val topic: String) : PersonalAction
+    object OnConfirmTopics : PersonalAction
 }
