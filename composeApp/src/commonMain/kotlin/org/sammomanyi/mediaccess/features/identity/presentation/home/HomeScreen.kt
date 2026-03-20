@@ -52,7 +52,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
+    val checkInState by checkInViewModel.state.collectAsStateWithLifecycle()
 
     var showBenefitsDialog by remember { mutableStateOf(false) }
     var showSpentDialog by remember { mutableStateOf(false) }
@@ -85,6 +85,13 @@ fun HomeScreen(
             item {
                 MyCoversSection(
                     onLinkCoverClick = onNavigateToLinkCover
+                )
+            }
+
+            item {
+                QueueStatusSection(
+                    queueState = checkInState.queueState,
+                    onCheckStatus = onNavigateToCheckIn
                 )
             }
 
