@@ -80,6 +80,19 @@ class CheckInViewModel(
 
     init {
         checkCoverStatus()
+        startQueueListenerForCurrentUser()
+    }
+
+    private fun startQueueListenerForCurrentUser() {
+        viewModelScope.launch {
+            val user = getCurrentUserUseCase().firstOrNull()
+            val userId = user?.id
+
+            if (userId != null) {
+                currentUserId = userId
+                startQueueListener(userId) // Start listening immediately
+            }
+        }
     }
 
     fun checkCoverStatus() {

@@ -1,4 +1,3 @@
-
 package org.sammomanyi.mediaccess.features.queue.data
 
 import dev.gitlive.firebase.firestore.FirebaseFirestore
@@ -7,6 +6,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
+import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
 class QueueRepository(
     private val firestore: FirebaseFirestore?
@@ -15,7 +15,7 @@ class QueueRepository(
         val fs = firestore ?: return flowOf(null)
         val today = DateProvider.today()
 
-        // ✅ SIMPLE: Just query by patientUserId, filter date in code
+        // ✅ SIMPLEST QUERY POSSIBLE - Only patientUserId
         return fs.collection("queue_entries")
             .where { "patientUserId" equalTo patientUserId }
             .snapshots
@@ -43,11 +43,14 @@ class QueueRepository(
                                 date = doc.get("date")
                             )
                         } catch (e: Exception) {
-                            println("🔴 QueueRepo error: ${e.message}")
+                            println("🔴 QueueRepo parse error: ${e.message}")
                             null
                         }
                     }
-                    .filter { it.date == today } // ✅ Filter by date in code
+                    .filter { entry ->
+                        // ✅ Filter in code, not in Firestore query
+                        entry.date == today && entry.status != QueueStatus.DONE.name
+                    }
                     .maxByOrNull { it.assignedAt }
             }
     }
