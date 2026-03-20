@@ -5,27 +5,19 @@ import dev.gitlive.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.sammomanyi.mediaccess.app.DateProvider
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
-import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
 
 class QueueRepository(
     private val firestore: FirebaseFirestore?
 ) {
-    // ── Real-time listener for patient's active queue entry ──
-    // Used by mobile CheckInScreen to get live position + status
     fun observePatientQueueEntry(patientUserId: String): Flow<QueueEntry?> {
         val fs = firestore ?: return flowOf(null)
+        val today = DateProvider.today()
 
-        // We only want today's entry for this patient
-        val today = todayString()
-
+        // ✅ SIMPLE: Just query by patientUserId, filter date in code
         return fs.collection("queue_entries")
             .where { "patientUserId" equalTo patientUserId }
-            .where { "date" equalTo today } // ✅ Safe index: just user + today's date
             .snapshots
             .map { snapshot ->
                 snapshot.documents
@@ -51,18 +43,22 @@ class QueueRepository(
                                 date = doc.get("date")
                             )
                         } catch (e: Exception) {
+                            println("🔴 QueueRepo error: ${e.message}")
                             null
                         }
                     }
-                    // ✅ REMOVED the "!= DONE" filter. The UI NEEDS to see the DONE status!
-                    .maxByOrNull { it.assignedAt }  // Get their latest entry for today
+                    .filter { it.date == today } // ✅ Filter by date in code
+                    .maxByOrNull { it.assignedAt }
             }
     }
 
+
     // Helper to get today's date string
     companion object {
+
         fun todayString(): String {
             return DateProvider.today()
+
 
         }
     }
