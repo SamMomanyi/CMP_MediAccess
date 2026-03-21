@@ -246,7 +246,7 @@ private fun PrescriptionDetailView(
                 border = BorderStroke(1.dp, Color(0xFF9C27B0).copy(alpha = 0.3f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(med.medicationName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(med.medicationName ?: "", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         InfoChip("Dosage: ${med.dosage}")

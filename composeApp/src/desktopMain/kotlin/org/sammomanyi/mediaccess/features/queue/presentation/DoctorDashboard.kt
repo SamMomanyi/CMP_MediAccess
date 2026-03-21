@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
+import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionItem
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueEntry
@@ -270,6 +272,17 @@ fun DoctorDashboardScreen(
             ) { Text(error, color = Color.White) }
         }
     }
+    if (state.showPrescriptionDialog && state.selectedPatientForPrescription != null) {
+        PrescriptionDialog(
+            patient = state.selectedPatientForPrescription!!,
+            items = state.prescriptionItems,
+            onDismiss = { viewModel.dismissPrescriptionDialog() },
+            onAddItem = { viewModel.addPrescriptionItem() },
+            onRemoveItem = { viewModel.removePrescriptionItem(it) },
+            onUpdateItem = { index, item -> viewModel.updatePrescriptionItem(index, item) },
+            onSubmit = { medications, notes -> viewModel.createPrescription(medications, notes) }
+        )
+    }
 }
 
 @Composable
@@ -389,9 +402,9 @@ private fun WaitingPatientCard(
 }
 
 @Composable
+
 private fun CompletedPatientCard(entry: QueueEntry) {
     val completedTime = entry.completedAt?.let { ts ->
-        // ✅ Standard JVM way to format time from a Long timestamp
         val instant = Instant.ofEpochMilli(ts)
         val zonedDateTime = instant.atZone(ZoneId.of("Africa/Nairobi"))
         String.format("%02d:%02d", zonedDateTime.hour, zonedDateTime.minute)
@@ -422,4 +435,116 @@ private fun InfoChip(label: String) {
     Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
         Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+
+private fun PrescriptionDialog(
+    patient: QueueEntry,
+    items: List<PrescriptionItem>,
+    onDismiss: () -> Unit,
+    onAddItem: () -> Unit,
+    onRemoveItem: (Int) -> Unit,
+    onUpdateItem: (Int, PrescriptionItem) -> Unit,
+    onSubmit: (List<PrescriptionItem>, String) -> Unit
+) {
+    var notes by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Prescribe Medication - ${patient.patientName}") },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.heightIn(max = 400.dp)
+            ) {
+                itemsIndexed(items) { index, item ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Medication ${index + 1}", fontWeight = FontWeight.Bold)
+                                if (items.size > 1) {
+                                    IconButton(
+                                        onClick = { onRemoveItem(index) },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = "Remove")
+                                    }
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = item.medicationName ?: "",
+                                onValueChange = { onUpdateItem(index, item.copy(medicationName = it)) },
+                                label = { Text("Medicine Name") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = item.dosage ?: "",
+                                    onValueChange = { onUpdateItem(index, item.copy(dosage = it)) },
+                                    label = { Text("Dosage") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = item.frequency ?: "",
+                                    onValueChange = { onUpdateItem(index, item.copy(frequency = it)) },
+                                    label = { Text("Frequency") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            OutlinedTextField(
+                                value = item.duration ?: "",
+                                onValueChange = { onUpdateItem(index, item.copy(duration = it)) },
+                                label = { Text("Duration") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    OutlinedButton(
+                        onClick = onAddItem,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Add Another Medication")
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        label = { Text("Additional Notes") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSubmit(items, notes) },
+                enabled = items.any { !it.medicationName.isNullOrBlank() }
+            ) {
+                Text("Send to Pharmacy")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

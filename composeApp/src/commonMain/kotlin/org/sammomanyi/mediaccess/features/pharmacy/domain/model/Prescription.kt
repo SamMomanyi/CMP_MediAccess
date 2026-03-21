@@ -21,12 +21,13 @@ data class Prescription(
 )
 
 @Serializable
+
 data class PrescriptionItem(
-    val medicationName: String,
-    val dosage: String,
-    val frequency: String,
-    val duration: String,
-    val quantity: Int,
+    val medicationName: String? = "",
+    val dosage: String? = "",
+    val frequency: String? = "",
+    val duration: String? = "",
+    val quantity: Int? = 0,
     val unitPrice: Double = 0.0
 )
 

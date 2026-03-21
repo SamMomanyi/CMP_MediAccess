@@ -129,7 +129,7 @@ fun ExpenditureSummaryScreen(
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        med.medicationName,
+                                        med.medicationName ?: "",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )

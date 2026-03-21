@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
-import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
-import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PrescriptionItem
@@ -34,15 +32,15 @@ data class DoctorQueueState(
     val lastRefreshedAt: Long? = null,
     val isAvailable: Boolean = true,
     val showPrescriptionDialog: Boolean = false,
-    val selectedPatientForPrescription: QueueEntry? = null
+    val selectedPatientForPrescription: QueueEntry? = null,
+    val prescriptionItems: List<PrescriptionItem> = listOf(PrescriptionItem())
 )
 
 class DoctorQueueViewModel(
     private val queueRepository: QueueDesktopRepository,
     private val staffRepository: StaffFirestoreRepository,
     private val doctor: AdminAccountEntity,
-    private val pharmacyDesktopRepository : PharmacyDesktopRepository ? = null
-
+    private val pharmacyDesktopRepository: PharmacyDesktopRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DoctorQueueState(
@@ -77,7 +75,7 @@ class DoctorQueueViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true)
+            _state.update { it.copy(isLoading = true) }
             val date = QueueRepository.todayString()
             val allActive = queueRepository.getDoctorQueue(doctor.id, date)
             val completed = queueRepository.getDoctorCompletedToday(doctor.id, date)
@@ -86,32 +84,32 @@ class DoctorQueueViewModel(
             val waiting = allActive.filter { it.status == QueueStatus.WAITING.name }
                 .sortedBy { it.queuePosition }
 
-            _state.value = _state.value.copy(
+            _state.update { it.copy(
                 currentPatient = current,
                 waitingQueue = waiting,
                 completedToday = completed,
                 isLoading = false,
                 lastRefreshedAt = System.currentTimeMillis()
-            )
+            ) }
         }
     }
 
     fun markDone() {
         val current = _state.value.currentPatient ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(actionInProgress = true)
+            _state.update { it.copy(actionInProgress = true) }
             val date = QueueRepository.todayString()
             val result = queueRepository.markPatientDone(current.id, doctor.id, date)
             result.fold(
                 onSuccess = {
-                    _state.value = _state.value.copy(actionInProgress = false)
+                    _state.update { it.copy(actionInProgress = false) }
                     refresh()
                 },
                 onFailure = { e ->
-                    _state.value = _state.value.copy(
+                    _state.update { it.copy(
                         actionInProgress = false,
                         error = "Could not mark as done: ${e.message}"
-                    )
+                    ) }
                 }
             )
         }
@@ -119,41 +117,60 @@ class DoctorQueueViewModel(
 
     fun callPatient(entryId: String) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(actionInProgress = true)
+            _state.update { it.copy(actionInProgress = true) }
             queueRepository.callPatient(entryId)
-            _state.value = _state.value.copy(actionInProgress = false)
+            _state.update { it.copy(actionInProgress = false) }
             refresh()
         }
-    }
-
-    fun dismissError() = _state.update { it.copy(error = null) }
-
-    override fun onCleared() {
-        super.onCleared()
-        autoPollJob?.cancel()
     }
 
     fun showPrescriptionDialog(patient: QueueEntry) {
         _state.update { it.copy(
             showPrescriptionDialog = true,
-            selectedPatientForPrescription = patient
+            selectedPatientForPrescription = patient,
+            prescriptionItems = listOf(PrescriptionItem())
         ) }
     }
 
     fun dismissPrescriptionDialog() {
         _state.update { it.copy(
             showPrescriptionDialog = false,
-            selectedPatientForPrescription = null
+            selectedPatientForPrescription = null,
+            prescriptionItems = listOf(PrescriptionItem())
+        ) }
+    }
+
+    fun addPrescriptionItem() {
+        _state.update { it.copy(
+            prescriptionItems = it.prescriptionItems + PrescriptionItem()
+        ) }
+    }
+
+    fun removePrescriptionItem(index: Int) {
+        _state.update { it.copy(
+            prescriptionItems = it.prescriptionItems.filterIndexed { i, _ -> i != index }
+        ) }
+    }
+
+    fun updatePrescriptionItem(index: Int, item: PrescriptionItem) {
+        _state.update { it.copy(
+            prescriptionItems = it.prescriptionItems.mapIndexed { i, existing ->
+                if (i == index) item else existing
+            }
         ) }
     }
 
     fun createPrescription(medications: List<PrescriptionItem>, notes: String) {
-        if (pharmacyDesktopRepository == null) {
-            _state.update { it.copy(error = "Pharmacy connection not injected properly") }
+        val patient = _state.value.selectedPatientForPrescription ?: return
+        val validMeds = medications.filter {
+            !it.medicationName.isNullOrBlank()
+        }
+
+        if (validMeds.isEmpty()) {
+            _state.update { it.copy(error = "Please add at least one medication") }
             return
         }
 
-        val patient = _state.value.selectedPatientForPrescription ?: return
         viewModelScope.launch {
             _state.update { it.copy(actionInProgress = true) }
 
@@ -165,7 +182,7 @@ class DoctorQueueViewModel(
                 doctorId = doctor.id,
                 doctorName = doctor.name,
                 queueEntryId = patient.id,
-                medications = medications,
+                medications = validMeds,
                 notes = notes,
                 status = PrescriptionStatus.PENDING,
                 createdAt = System.currentTimeMillis(),
@@ -174,7 +191,6 @@ class DoctorQueueViewModel(
 
             pharmacyDesktopRepository.createPrescription(prescription).fold(
                 onSuccess = { prescriptionId ->
-                    // Add to Pharmacy Queue
                     pharmacyDesktopRepository.addToPharmacyQueue(
                         patientUserId = patient.patientUserId,
                         patientName = patient.patientName,
@@ -182,20 +198,31 @@ class DoctorQueueViewModel(
                         prescriptionId = prescriptionId,
                         date = QueueRepository.todayString()
                     )
-                    // End Doctor Consultation
+
                     queueRepository.markPatientDone(patient.id, doctor.id, QueueRepository.todayString())
 
                     _state.update { it.copy(
                         actionInProgress = false,
                         showPrescriptionDialog = false,
-                        selectedPatientForPrescription = null
+                        selectedPatientForPrescription = null,
+                        prescriptionItems = listOf(PrescriptionItem())
                     ) }
                     refresh()
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(actionInProgress = false, error = "Failed to create prescription: ${e.message}") }
+                    _state.update { it.copy(
+                        actionInProgress = false,
+                        error = "Failed to create prescription: ${e.message}"
+                    ) }
                 }
             )
         }
+    }
+
+    fun dismissError() = _state.update { it.copy(error = null) }
+
+    override fun onCleared() {
+        super.onCleared()
+        autoPollJob?.cancel()
     }
 }
