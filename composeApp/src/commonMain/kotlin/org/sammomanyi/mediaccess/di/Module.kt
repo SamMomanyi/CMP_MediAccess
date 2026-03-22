@@ -108,8 +108,8 @@ val sharedModule = module {
         }
     }
 
-//    single { PrescriptionRepository(get()) }
-//    single { PharmacyQueueRepository(get()) }
+    single { PrescriptionRepository(get()) }
+    single { PharmacyQueueRepository(get()) }
 
     single { NewsService(get()) }
     // Register CoverRepository directly — no Impl needed
