@@ -50,7 +50,20 @@ sealed class QueueState {
         val doctorName: String,
         val roomNumber: String
     ) : QueueState()
-    object Done : QueueState()
+    // Pharmacy queue states
+    data class AtPharmacy(
+        val position: Int,
+        val prescriptionId: String
+    ) : QueueState()
+
+    data class ReceivingMedication(
+        val prescriptionId: String
+    ) : QueueState()
+
+    data class Done(
+        val totalCost: Double? = null,
+        val message: String = "Your visit is complete!"
+    ) : QueueState()
 }
 
 data class CheckInUiState(
