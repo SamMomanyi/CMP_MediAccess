@@ -24,11 +24,10 @@ import org.sammomanyi.mediaccess.features.identity.presentation.checkin.QueueSta
 fun WaitingRoomScreen(
     queueState: QueueState,
     onBack: () -> Unit,
-    onNavigateToPharmacy: () -> Unit  // ← NEW param
+    onNavigateToPharmacy: () -> Unit
 ) {
     var animatedDots by remember { mutableStateOf("") }
 
-    // Animated waiting dots
     LaunchedEffect(Unit) {
         while (true) {
             animatedDots = "."
@@ -76,16 +75,38 @@ fun WaitingRoomScreen(
                         roomNumber = queueState.roomNumber
                     )
                 }
-                is QueueState.Done -> {
-                    // ✅ Navigate to pharmacy summary
-                    LaunchedEffect(Unit) {
-                        onNavigateToPharmacy()
-                    }
-                    CompletedContent(onBack = onBack)
+                is QueueState.AtPharmacy -> {
+                    AtPharmacyContent(
+                        position = queueState.position,
+                        animatedDots = animatedDots
+                    )
                 }
-                else -> {
+                is QueueState.ReceivingMedication -> {
+                    ReceivingMedicationContent()
+                }
+                is QueueState.Done -> {
+                    DoneContent(
+                        message = queueState.message,
+                        totalCost = queueState.totalCost,
+                        onBack = onBack
+                    )
+                }
+                QueueState.NotQueued -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text("Not currently in queue")
+                            Spacer(Modifier.height(24.dp))
+                            Button(onClick = onBack) {
+                                Text("Go Back")
+                            }
+                        }
                     }
                 }
             }
@@ -341,7 +362,238 @@ private fun YourTurnContent(
 }
 
 @Composable
-private fun CompletedContent(onBack: () -> Unit) {
+private fun AtPharmacyContent(
+    position: Int,
+    animatedDots: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF9C27B0).copy(alpha = 0.05f))
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            modifier = Modifier.size(140.dp),
+            shape = CircleShape,
+            color = Color(0xFF9C27B0).copy(alpha = 0.15f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Medication,
+                        contentDescription = null,
+                        tint = Color(0xFF9C27B0),
+                        modifier = Modifier.size(60.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "#$position",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF9C27B0)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = "Waiting at Pharmacy${animatedDots}",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(Modifier.height(40.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF9C27B0).copy(alpha = 0.1f)
+            ),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.LocalPharmacy,
+                        contentDescription = null,
+                        tint = Color(0xFF9C27B0),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "Pharmacy Queue",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    text = "Your prescription is being prepared",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF9C27B0),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = "You are number $position in line",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(Modifier.height(40.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF9C27B0).copy(alpha = 0.1f)
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = null,
+                    tint = Color(0xFF9C27B0),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "Your consultation is complete. The pharmacist will call you when your medication is ready.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReceivingMedicationContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF9C27B0).copy(alpha = 0.1f))
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Surface(
+            modifier = Modifier.size(120.dp),
+            shape = CircleShape,
+            color = Color(0xFF9C27B0)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.LocalPharmacy,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(60.dp)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = "Ready for Pickup!",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF9C27B0),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "Please proceed to the pharmacy counter",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(40.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF9C27B0)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    Icons.Default.Medication,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = "Your medication is ready",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.DirectionsWalk,
+                    contentDescription = null,
+                    tint = Color(0xFF9C27B0),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = "The pharmacist is waiting for you",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF9C27B0)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DoneContent(
+    message: String,
+    totalCost: Double?,
+    onBack: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -359,19 +611,59 @@ private fun CompletedContent(onBack: () -> Unit) {
         Spacer(Modifier.height(24.dp))
 
         Text(
-            text = "Visit Completed",
+            text = "Visit Completed!",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = Color(0xFF10B981)
         )
 
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Please proceed to pharmacy for medication",
+            text = message,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+
+        totalCost?.let { cost ->
+            Spacer(Modifier.height(32.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total Amount",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "KES ${String.format("%.2f", cost)}",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Return to Home", style = MaterialTheme.typography.titleMedium)
+        }
     }
 }
