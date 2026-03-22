@@ -162,9 +162,7 @@ class DoctorQueueViewModel(
 
     fun createPrescription(medications: List<PrescriptionItem>, notes: String) {
         val patient = _state.value.selectedPatientForPrescription ?: return
-        val validMeds = medications.filter {
-            !it.medicationName.isNullOrBlank()
-        }
+        val validMeds = medications.filter { !it.medicationName.isNullOrBlank() }
 
         if (validMeds.isEmpty()) {
             _state.update { it.copy(error = "Please add at least one medication") }
@@ -173,6 +171,9 @@ class DoctorQueueViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(actionInProgress = true) }
+
+            println("🟦 DOCTOR: Creating prescription for patient ${patient.patientName}")
+            println("🟦 DOCTOR: Medications: ${validMeds.size} items")
 
             val prescription = Prescription(
                 id = "",
@@ -191,6 +192,10 @@ class DoctorQueueViewModel(
 
             pharmacyDesktopRepository.createPrescription(prescription).fold(
                 onSuccess = { prescriptionId ->
+                    println("✅ DOCTOR: Prescription created with ID: $prescriptionId")
+
+                    // Add to pharmacy queue
+                    println("🟦 DOCTOR: Adding patient to pharmacy queue...")
                     pharmacyDesktopRepository.addToPharmacyQueue(
                         patientUserId = patient.patientUserId,
                         patientName = patient.patientName,
@@ -199,7 +204,13 @@ class DoctorQueueViewModel(
                         date = QueueRepository.todayString()
                     )
 
+                    println("✅ DOCTOR: Patient added to pharmacy queue")
+
+                    // Mark doctor consultation as done
+                    println("🟦 DOCTOR: Marking patient as done in doctor queue...")
                     queueRepository.markPatientDone(patient.id, doctor.id, QueueRepository.todayString())
+
+                    println("✅ DOCTOR: Complete! Patient moved to pharmacy")
 
                     _state.update { it.copy(
                         actionInProgress = false,
@@ -210,6 +221,8 @@ class DoctorQueueViewModel(
                     refresh()
                 },
                 onFailure = { e ->
+                    println("🔴 DOCTOR: Failed to create prescription: ${e.message}")
+                    e.printStackTrace()
                     _state.update { it.copy(
                         actionInProgress = false,
                         error = "Failed to create prescription: ${e.message}"
