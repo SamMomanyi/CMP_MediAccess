@@ -44,32 +44,47 @@ class PharmacyQueueRepository(private val firestore: FirebaseFirestore?) {
     }
 
     fun observePatientPharmacyQueue(patientUserId: String): Flow<PharmacyQueueEntry?> {
-        val fs = firestore ?: return kotlinx.coroutines.flow.flowOf(null)
+        println("🟣 PHARMACY LISTENER: Starting listener for user: $patientUserId")
+
+        val fs = firestore ?: run {
+            println("🔴 PHARMACY LISTENER: Firestore is NULL!")
+            return kotlinx.coroutines.flow.flowOf(null)
+        }
+
         return fs.collection("pharmacy_queue")
             .where { "patientUserId" equalTo patientUserId }
             .snapshots
             .map { snapshot ->
-                snapshot.documents
-                    .mapNotNull { doc ->
-                        try {
-                            PharmacyQueueEntry(
-                                id = doc.get("id"),
-                                patientUserId = doc.get("patientUserId"),
-                                patientName = doc.get("patientName"),
-                                patientEmail = doc.get("patientEmail"),
-                                prescriptionId = doc.get("prescriptionId"),
-                                queuePosition = (doc.get<Long>("queuePosition")).toInt(),
-                                status = PharmacyStatus.valueOf(doc.get("status")),
-                                assignedAt = doc.get<Long>("assignedAt"),
-                                dispensedAt = runCatching { doc.get<Long?>("dispensedAt") }.getOrNull(),
-                                date = doc.get("date")
-                            )
-                        } catch (e: Exception) {
-                            null
-                        }
+                println("🟣 PHARMACY LISTENER: Snapshot received - ${snapshot.documents.size} documents")
+
+                val entries = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val entry = PharmacyQueueEntry(
+                            id = doc.get("id"),
+                            patientUserId = doc.get("patientUserId"),
+                            patientName = doc.get("patientName"),
+                            patientEmail = doc.get("patientEmail"),
+                            prescriptionId = doc.get("prescriptionId"),
+                            queuePosition = (doc.get<Long>("queuePosition")).toInt(),
+                            status = PharmacyStatus.valueOf(doc.get("status")),
+                            assignedAt = doc.get<Long>("assignedAt"),
+                            dispensedAt = runCatching { doc.get<Long?>("dispensedAt") }.getOrNull(),
+                            date = doc.get("date")
+                        )
+                        println("🟣 PHARMACY LISTENER: Parsed entry - Status: ${entry.status}, Position: ${entry.queuePosition}")
+                        entry
+                    } catch (e: Exception) {
+                        println("🔴 PHARMACY LISTENER: Parse error: ${e.message}")
+                        e.printStackTrace()
+                        null
                     }
-                    .filter { it.status != PharmacyStatus.COMPLETED }
-                    .minByOrNull { it.assignedAt }
+                }
+
+                // ✅ DON'T FILTER - Return latest entry even if COMPLETED
+                val result = entries.minByOrNull { it.assignedAt }
+                println("🟣 PHARMACY LISTENER: Returning: ${result?.let { "Position #${it.queuePosition}, Status: ${it.status}" } ?: "NULL"}")
+
+                result
             }
     }
 

@@ -155,9 +155,15 @@ class PharmacyDesktopRepository(
         date: String
     ): Result<Unit> {
         return try {
+            println("🟪 PHARMACY REPO: Adding to queue - User: $patientUserId, Date: $date")
+
             val currentQueue = getPharmacyQueue(date)
+            println("🟪 PHARMACY REPO: Current queue size: ${currentQueue.size}")
+
             val nextPosition = (currentQueue.maxOfOrNull { it.queuePosition } ?: 0) + 1
             val id = java.util.UUID.randomUUID().toString()
+
+            println("🟪 PHARMACY REPO: Assigning position #$nextPosition, ID: $id")
 
             firestoreClient.updateDocument(
                 collection = "pharmacy_queue",
@@ -169,14 +175,17 @@ class PharmacyDesktopRepository(
                     "patientEmail" to patientEmail,
                     "prescriptionId" to prescriptionId,
                     "queuePosition" to nextPosition,
-                    "status" to org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyStatus.WAITING.name,
+                    "status" to PharmacyStatus.WAITING.name,
                     "assignedAt" to System.currentTimeMillis(),
                     "date" to date
                 )
             )
+
+            println("✅ PHARMACY REPO: Successfully added to Firestore")
             Result.success(Unit)
         } catch (e: Exception) {
-            println("🔴 Error adding to pharmacy queue: ${e.message}")
+            println("🔴 PHARMACY REPO: Error adding to queue: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

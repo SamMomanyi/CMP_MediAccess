@@ -267,39 +267,63 @@ class CheckInViewModel(
     }
 
     private fun startPharmacyQueueListener(userId: String) {
+        println("🟣 CHECKIN: Starting pharmacy queue listener for user: $userId")
+
         pharmacyQueueListenerJob?.cancel()
         pharmacyQueueListenerJob = viewModelScope.launch {
             pharmacyQueueRepository.observePatientPharmacyQueue(userId).collect { entry ->
-                if (entry != null) {
-                    val newQueueState = when (entry.status) {
+                println("🟣 CHECKIN: Pharmacy queue update received - Entry: ${entry?.let { "Position #${it.queuePosition}, Status: ${it.status}" } ?: "NULL"}")
+
+                val newQueueState = if (entry != null) {
+                    when (entry.status) {
                         PharmacyStatus.WAITING -> {
+                            println("🟣 CHECKIN: Setting state to AtPharmacy")
                             QueueState.AtPharmacy(
                                 position = entry.queuePosition,
                                 prescriptionId = entry.prescriptionId
                             )
                         }
                         PharmacyStatus.DISPENSING -> {
+                            println("🟣 CHECKIN: Setting state to ReceivingMedication")
                             QueueState.ReceivingMedication(
                                 prescriptionId = entry.prescriptionId
                             )
                         }
                         PharmacyStatus.COMPLETED -> {
-                            // Fetch prescription to get total cost
+                            println("🟣 CHECKIN: Setting state to Done")
                             QueueState.Done(
-                                totalCost = null, // Will be populated when we fetch prescription
+                                totalCost = null,
                                 message = "Medication dispensed! Proceed to billing."
                             )
                         }
                     }
-
-                    val wasInDoctorQueue = _state.value.queueState is QueueState.YourTurn
-                    val isNowInPharmacy = newQueueState is QueueState.AtPharmacy
-
-                    _state.update { it.copy(
-                        queueState = newQueueState,
-                        triggerHaptic = wasInDoctorQueue && isNowInPharmacy
-                    ) }
+                } else {
+                    // ✅ If NULL and we were in pharmacy queue, assume it's done
+                    val currentState = _state.value.queueState
+                    if (currentState is QueueState.AtPharmacy ||
+                        currentState is QueueState.ReceivingMedication) {
+                        println("🟣 CHECKIN: Entry NULL but was in pharmacy - marking as Done")
+                        QueueState.Done(
+                            totalCost = null,
+                            message = "Visit complete!"
+                        )
+                    } else {
+                        println("🟣 CHECKIN: Entry is NULL, keeping current state")
+                        currentState
+                    }
                 }
+
+                val wasInDoctorQueue = _state.value.queueState is QueueState.YourTurn
+                val isNowInPharmacy = newQueueState is QueueState.AtPharmacy
+
+                println("🟣 CHECKIN: Updating UI state to: ${newQueueState::class.simpleName}")
+
+                _state.update { it.copy(
+                    queueState = newQueueState,
+                    triggerHaptic = wasInDoctorQueue && isNowInPharmacy
+                ) }
+
+                println("✅ CHECKIN: UI state updated to: ${newQueueState::class.simpleName}")
             }
         }
     }
