@@ -21,6 +21,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.GenerateVisit
 import org.sammomanyi.mediaccess.features.identity.domain.use_case.GetCurrentUserUseCase
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.queue.domain.model.QueueStatus
+import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
+import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyStatus
 
 sealed class CoverGateState {
     object Checking : CoverGateState()
@@ -40,16 +42,20 @@ sealed class CheckInCodeState {
 
 sealed class QueueState {
     object NotQueued : QueueState()
+
+    // Doctor queue states
     data class Waiting(
         val position: Int,
         val doctorName: String,
         val roomNumber: String,
         val purpose: String
     ) : QueueState()
+
     data class YourTurn(
         val doctorName: String,
         val roomNumber: String
     ) : QueueState()
+
     // Pharmacy queue states
     data class AtPharmacy(
         val position: Int,
@@ -81,14 +87,16 @@ class CheckInViewModel(
     private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val coverRepository: CoverRepository,
     private val queueRepository: QueueRepository,
-    private val identityRepository: IdentityRepository  // ✅ ADD THIS
+    private val pharmacyQueueRepository: PharmacyQueueRepository,
+    private val identityRepository: IdentityRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CheckInUiState())
     val state: StateFlow<CheckInUiState> = _state.asStateFlow()
 
     private var countdownJob: Job? = null
-    private var queueListenerJob: Job? = null
+    private var doctorQueueListenerJob: Job? = null
+    private var pharmacyQueueListenerJob: Job? = null
     private var currentUserId: String? = null
 
     init {
@@ -103,7 +111,8 @@ class CheckInViewModel(
 
             if (userId != null) {
                 currentUserId = userId
-                startQueueListener(userId) // Start listening immediately
+                startDoctorQueueListener(userId)
+                startPharmacyQueueListener(userId)
             }
         }
     }
@@ -149,9 +158,11 @@ class CheckInViewModel(
         viewModelScope.launch {
             _state.update { it.copy(codeState = CheckInCodeState.Generating) }
 
-            // ✅ CHECK 1: Already in queue?
-            val activeEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
-            if (activeEntry != null) {
+            // Check for active visits in both queues
+            val activeDocEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
+            val activePharmacyEntry = pharmacyQueueRepository.observePatientPharmacyQueue(userId).firstOrNull()
+
+            if (activeDocEntry != null || activePharmacyEntry != null) {
                 _state.update { it.copy(
                     codeState = CheckInCodeState.GenerationFailed(
                         "You already have an active visit. Please complete it before generating a new code."
@@ -160,11 +171,10 @@ class CheckInViewModel(
                 return@launch
             }
 
-            // ✅ CHECK 2: Already have active visit code?
+            // Check for existing visit code
             when (val existingCodeResult = identityRepository.getActiveVisitCode(userId)) {
                 is Result.Success -> {
                     if (existingCodeResult.data != null) {
-                        // Use existing code
                         _state.update { it.copy(
                             codeState = CheckInCodeState.Ready(
                                 visitCode = existingCodeResult.data,
@@ -173,16 +183,15 @@ class CheckInViewModel(
                             queueState = QueueState.NotQueued
                         ) }
                         startCountdown(existingCodeResult.data)
-                        startQueueListener(userId)
+                        startDoctorQueueListener(userId)
+                        startPharmacyQueueListener(userId)
                         return@launch
                     }
                 }
-                is Result.Error -> {
-                    // No active code, proceed to generate
-                }
+                is Result.Error -> {}
             }
 
-            // ✅ Generate new code
+            // Generate new code
             val result = generateVisitCodeUseCase(userId, purpose)
             when (result) {
                 is Result.Success -> {
@@ -194,7 +203,8 @@ class CheckInViewModel(
                         queueState = QueueState.NotQueued
                     ) }
                     startCountdown(result.data)
-                    startQueueListener(userId)
+                    startDoctorQueueListener(userId)
+                    startPharmacyQueueListener(userId)
                 }
                 is Result.Error -> {
                     _state.update { it.copy(
@@ -207,40 +217,89 @@ class CheckInViewModel(
         }
     }
 
-    private fun startQueueListener(userId: String) {
-        queueListenerJob?.cancel()
-        queueListenerJob = viewModelScope.launch {
+    private fun startDoctorQueueListener(userId: String) {
+        doctorQueueListenerJob?.cancel()
+        doctorQueueListenerJob = viewModelScope.launch {
             queueRepository.observePatientQueueEntry(userId).collect { entry ->
-                val newQueueState = when {
-                    entry == null -> QueueState.NotQueued
-                    entry.status == QueueStatus.DONE.name -> QueueState.Done
-                    entry.status == QueueStatus.IN_PROGRESS.name -> {
-                        QueueState.YourTurn(
-                            doctorName = entry.doctorName,
-                            roomNumber = entry.roomNumber
-                        )
+                // Only update if not in pharmacy queue
+                val currentState = _state.value.queueState
+                val isInPharmacy = currentState is QueueState.AtPharmacy ||
+                        currentState is QueueState.ReceivingMedication ||
+                        currentState is QueueState.Done
+
+                if (!isInPharmacy) {
+                    val newQueueState = when {
+                        entry == null -> QueueState.NotQueued
+                        entry.status == QueueStatus.DONE.name -> {
+                            // Doctor is done, check pharmacy queue
+                            QueueState.NotQueued
+                        }
+                        entry.status == QueueStatus.IN_PROGRESS.name -> {
+                            QueueState.YourTurn(
+                                doctorName = entry.doctorName,
+                                roomNumber = entry.roomNumber
+                            )
+                        }
+                        entry.status == QueueStatus.WAITING.name -> {
+                            QueueState.Waiting(
+                                position = entry.queuePosition,
+                                doctorName = entry.doctorName,
+                                roomNumber = entry.roomNumber,
+                                purpose = entry.purpose
+                            )
+                        }
+                        else -> QueueState.NotQueued
                     }
-                    entry.status == QueueStatus.WAITING.name -> {
-                        QueueState.Waiting(
-                            position = entry.queuePosition,
-                            doctorName = entry.doctorName,
-                            roomNumber = entry.roomNumber,
-                            purpose = entry.purpose
-                        )
-                    }
-                    else -> QueueState.NotQueued
+
+                    val wasNotQueued = _state.value.queueState is QueueState.NotQueued
+                    val isNowQueued = newQueueState !is QueueState.NotQueued
+                    val wasAlreadyYourTurn = _state.value.queueState is QueueState.YourTurn
+                    val isNowYourTurn = newQueueState is QueueState.YourTurn
+
+                    _state.update { it.copy(
+                        queueState = newQueueState,
+                        shouldNavigateToWaitingRoom = wasNotQueued && isNowQueued,
+                        triggerHaptic = isNowYourTurn && !wasAlreadyYourTurn
+                    ) }
                 }
+            }
+        }
+    }
 
-                val wasNotQueued = _state.value.queueState is QueueState.NotQueued
-                val isNowQueued = newQueueState !is QueueState.NotQueued
-                val wasAlreadyYourTurn = _state.value.queueState is QueueState.YourTurn
-                val isNowYourTurn = newQueueState is QueueState.YourTurn
+    private fun startPharmacyQueueListener(userId: String) {
+        pharmacyQueueListenerJob?.cancel()
+        pharmacyQueueListenerJob = viewModelScope.launch {
+            pharmacyQueueRepository.observePatientPharmacyQueue(userId).collect { entry ->
+                if (entry != null) {
+                    val newQueueState = when (entry.status) {
+                        PharmacyStatus.WAITING -> {
+                            QueueState.AtPharmacy(
+                                position = entry.queuePosition,
+                                prescriptionId = entry.prescriptionId
+                            )
+                        }
+                        PharmacyStatus.DISPENSING -> {
+                            QueueState.ReceivingMedication(
+                                prescriptionId = entry.prescriptionId
+                            )
+                        }
+                        PharmacyStatus.COMPLETED -> {
+                            // Fetch prescription to get total cost
+                            QueueState.Done(
+                                totalCost = null, // Will be populated when we fetch prescription
+                                message = "Medication dispensed! Proceed to billing."
+                            )
+                        }
+                    }
 
-                _state.update { it.copy(
-                    queueState = newQueueState,
-                    shouldNavigateToWaitingRoom = wasNotQueued && isNowQueued,
-                    triggerHaptic = isNowYourTurn && !wasAlreadyYourTurn
-                ) }
+                    val wasInDoctorQueue = _state.value.queueState is QueueState.YourTurn
+                    val isNowInPharmacy = newQueueState is QueueState.AtPharmacy
+
+                    _state.update { it.copy(
+                        queueState = newQueueState,
+                        triggerHaptic = wasInDoctorQueue && isNowInPharmacy
+                    ) }
+                }
             }
         }
     }
@@ -274,7 +333,8 @@ class CheckInViewModel(
 
     fun resetCode() {
         countdownJob?.cancel()
-        queueListenerJob?.cancel()
+        doctorQueueListenerJob?.cancel()
+        pharmacyQueueListenerJob?.cancel()
         _state.update { it.copy(
             codeState = CheckInCodeState.Idle,
             queueState = QueueState.NotQueued
@@ -284,6 +344,7 @@ class CheckInViewModel(
     override fun onCleared() {
         super.onCleared()
         countdownJob?.cancel()
-        queueListenerJob?.cancel()
+        doctorQueueListenerJob?.cancel()
+        pharmacyQueueListenerJob?.cancel()
     }
 }
