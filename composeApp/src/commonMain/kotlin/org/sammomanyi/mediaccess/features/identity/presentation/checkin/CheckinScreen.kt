@@ -164,6 +164,125 @@ fun CheckInScreen(
                 }
             }
         }
+        // ── "Receiving Medication" banner ─────────────────
+        AnimatedVisibility(
+            visible = state.queueState is QueueState.ReceivingMedication,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF9C27B0),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.Medication, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Receiving Medication",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Text(
+                            "Pharmacist is preparing your prescription",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                }
+            }
+        }
+
+// ── "At Pharmacy" banner (waiting for medication) ─
+        AnimatedVisibility(
+            visible = state.queueState is QueueState.AtPharmacy,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            val atPharmacy = state.queueState as? QueueState.AtPharmacy
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF9C27B0).copy(alpha = 0.15f)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(modifier = Modifier.size(48.dp), shape = CircleShape, color = Color(0xFF9C27B0)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                "#${atPharmacy?.position ?: 0}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Waiting at Pharmacy",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF9C27B0)
+                        )
+                        Text(
+                            "Position #${atPharmacy?.position ?: 0} in pharmacy queue",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+// ── "Done" banner (visit complete with billing) ───
+        AnimatedVisibility(
+            visible = state.queueState is QueueState.Done,
+            enter = slideInVertically() + fadeIn(),
+            exit = slideOutVertically() + fadeOut()
+        ) {
+            val done = state.queueState as? QueueState.Done
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF10B981),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Visit Complete!",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Text(
+                            done?.message ?: "Thank you for visiting!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        done?.totalCost?.let { cost ->
+                            Text(
+                                "Total: KES ${String.format("%.2f", cost)}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         // ── Main content area ─────────────────────────────────
         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
