@@ -190,4 +190,74 @@ class PharmacyDesktopRepository(
         }
     }
 
+    suspend fun markAsDispensedWithExpenditure(
+        queueEntryId: String,
+        prescriptionId: String,
+        totalCost: Double,
+        pharmacistId: String,
+        pharmacistName: String,
+        expenditureRepository: org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository,
+        coverRepository: org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+    ): Result<Unit> = runCatching {
+        println("🟪 PHARMACY: Starting billing for queue entry: $queueEntryId")
+
+        // 1. Get prescription details
+        val prescription = getPrescription(prescriptionId) ?: throw Exception("Prescription not found")
+
+        // 2. Get patient's cover info
+        val coverRequests = coverRepository.getAllRequests().firstOrNull() ?: emptyList()
+        val patientCover = coverRequests.firstOrNull {
+            it.userId == prescription.patientUserId &&
+                    it.status == org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus.APPROVED
+        } ?: throw Exception("No approved cover found")
+
+        val consultationFee = 500.0
+        val medicationCost = totalCost
+        val totalAmount = consultationFee + medicationCost
+
+        val coverBalanceBefore = patientCover.remainingBalance
+        val coverBalanceAfter = (coverBalanceBefore - totalAmount).coerceAtLeast(0.0)
+        val coverUsed = coverBalanceBefore - coverBalanceAfter
+        val outOfPocket = (totalAmount - coverUsed).coerceAtLeast(0.0)
+
+        println("🟪 PHARMACY: Billing breakdown - Total: $totalAmount, Cover: $coverUsed, OOP: $outOfPocket")
+
+        // 3. Create expenditure record
+        val expenditure = org.sammomanyi.mediaccess.features.pharmacy.domain.model.Expenditure(
+            patientUserId = prescription.patientUserId,
+            patientName = prescription.patientName,
+            patientEmail = prescription.patientEmail,
+            doctorId = prescription.doctorId,
+            doctorName = prescription.doctorName,
+            pharmacistId = pharmacistId,
+            pharmacistName = pharmacistName,
+            visitType = prescription.queueEntryId, // Will be improved later
+            prescriptionId = prescriptionId,
+            consultationFee = consultationFee,
+            medicationCost = medicationCost,
+            totalAmount = totalAmount,
+            coverUsed = coverUsed,
+            outOfPocket = outOfPocket,
+            insuranceName = patientCover.insuranceName,
+            memberNumber = patientCover.memberNumber,
+            coverBalanceBefore = coverBalanceBefore,
+            coverBalanceAfter = coverBalanceAfter,
+            date = org.sammomanyi.mediaccess.features.queue.data.QueueRepository.todayString(),
+            timestamp = System.currentTimeMillis()
+        )
+
+        expenditureRepository.createExpenditure(expenditure).getOrThrow()
+
+        // 4. Update cover balance
+        coverRepository.updateCoverBalance(
+            coverRequestId = patientCover.id,
+            newBalance = coverBalanceAfter,
+            amountSpent = totalAmount
+        )
+
+        // 5. Mark pharmacy queue as completed
+        markAsDispensed(queueEntryId, prescriptionId, totalCost)
+
+        println("✅ PHARMACY: Billing complete! New balance: $coverBalanceAfter")
+    }
 }
