@@ -20,15 +20,14 @@ class CoverRepository(
     // ✅ REAL-TIME USER REQUESTS
     fun getUserRequests(userId: String): Flow<List<CoverLinkRequest>> {
         if (dao == null) {
-            // ✅ Mobile: Real-time Firestore listener
             return callbackFlow {
                 try {
                     firestore?.collection("cover_requests")
                         ?.where { "userId" equalTo userId }
-                        ?.snapshots  // ✅ Real-time updates!
+                        ?.snapshots
                         ?.collect { snapshot ->
-                            val requests = snapshot.documents.map { doc ->
-                                doc.data<CoverLinkRequestEntity>().toDomain()
+                            val requests = snapshot.documents.mapNotNull { doc ->
+                                parseFirestoreDocument(doc)
                             }
                             trySend(requests)
                         }
@@ -40,7 +39,6 @@ class CoverRepository(
             }
         }
 
-        // ✅ Desktop: Room DAO
         return dao.getRequestsForUser(userId).map { list ->
             list.map { it.toDomain() }
         }
@@ -71,7 +69,7 @@ class CoverRepository(
 
             firestore?.collection("cover_requests")
                 ?.document(request.id)
-                ?.set(entity.toFirestoreMap())
+                ?.set(request.toFirestoreMap())
 
             Result.success(request)
         } catch (e: Exception) {
@@ -80,16 +78,16 @@ class CoverRepository(
         }
     }
 
-    // ✅ REAL-TIME ALL REQUESTS (for admin)
+    // ✅ REAL-TIME ALL REQUESTS (for admin) - CLEANED UP!
     fun getAllRequests(): Flow<List<CoverLinkRequest>> {
         if (dao == null) {
             return callbackFlow {
                 try {
                     firestore?.collection("cover_requests")
-                        ?.snapshots  // ✅ Real-time!
+                        ?.snapshots
                         ?.collect { snapshot ->
-                            val requests = snapshot.documents.map { doc ->
-                                doc.data<CoverLinkRequestEntity>().toDomain()
+                            val requests = snapshot.documents.mapNotNull { doc ->
+                                parseFirestoreDocument(doc)
                             }
                             trySend(requests)
                         }
@@ -111,10 +109,10 @@ class CoverRepository(
                 try {
                     firestore?.collection("cover_requests")
                         ?.where { "status" equalTo CoverStatus.PENDING.name }
-                        ?.snapshots  // ✅ Real-time!
+                        ?.snapshots
                         ?.collect { snapshot ->
-                            val requests = snapshot.documents.map { doc ->
-                                doc.data<CoverLinkRequestEntity>().toDomain()
+                            val requests = snapshot.documents.mapNotNull { doc ->
+                                parseFirestoreDocument(doc)
                             }
                             trySend(requests)
                         }
@@ -184,7 +182,7 @@ class CoverRepository(
 
         try {
             val doc = fs.collection("cover_requests").document(coverRequestId).get()
-            val currentSpent = (doc.get<Number?>("totalSpent") ?: 0).toDouble()
+            val currentSpent = runCatching { (doc.get<Number?>("totalSpent") ?: 0).toDouble() }.getOrDefault(0.0)
 
             fs.collection("cover_requests").document(coverRequestId).update(
                 mapOf(
@@ -198,6 +196,7 @@ class CoverRepository(
             println("🔴 COVER: Failed to update balance: ${e.message}")
         }
     }
+
     suspend fun reviewRequest(requestId: String, isApproved: Boolean, note: String) {
         val fs = firestore ?: return
 
@@ -221,8 +220,34 @@ class CoverRepository(
             println("🔴 COVER: Failed to review request: ${e.message}")
         }
     }
+
+    // ✅ SAFE FIRESTORE DOCUMENT PARSER
+    private fun parseFirestoreDocument(doc: dev.gitlive.firebase.firestore.DocumentSnapshot): CoverLinkRequest? {
+        return try {
+            CoverLinkRequest(
+                id = doc.get("id"),
+                userId = doc.get("userId"),
+                userEmail = doc.get("userEmail"),
+                country = doc.get("country"),
+                insuranceName = doc.get("insuranceName"),
+                memberNumber = doc.get("memberNumber"),
+                status = CoverStatus.valueOf(doc.get("status")),
+                submittedAt = doc.get<Long>("submittedAt"),
+                reviewedAt = runCatching { doc.get<Long?>("reviewedAt") }.getOrNull(),
+                reviewNote = doc.get<String?>("reviewNote") ?: "",
+                // ✅ NEW: Parse financial fields with safe defaults
+                coverAmount = runCatching { (doc.get<Number?>("coverAmount") ?: 100000.0).toDouble() }.getOrDefault(100000.0),
+                remainingBalance = runCatching { (doc.get<Number?>("remainingBalance") ?: 100000.0).toDouble() }.getOrDefault(100000.0),
+                totalSpent = runCatching { (doc.get<Number?>("totalSpent") ?: 0.0).toDouble() }.getOrDefault(0.0)
+            )
+        } catch (e: Exception) {
+            println("🔴 Error parsing cover request document: ${e.message}")
+            null
+        }
+    }
 }
 
+// ✅ ENTITY CONVERSION - Updated
 private fun CoverLinkRequestEntity.toDomain() = CoverLinkRequest(
     id = id,
     userId = userId,
@@ -233,7 +258,11 @@ private fun CoverLinkRequestEntity.toDomain() = CoverLinkRequest(
     status = CoverStatus.valueOf(status),
     submittedAt = submittedAt,
     reviewedAt = reviewedAt,
-    reviewNote = reviewNote
+    reviewNote = reviewNote,
+    // Desktop entities won't have these, so use defaults
+    coverAmount = 100000.0,
+    remainingBalance = 100000.0,
+    totalSpent = 0.0
 )
 
 private fun CoverLinkRequest.toEntity() = CoverLinkRequestEntity(
@@ -249,15 +278,19 @@ private fun CoverLinkRequest.toEntity() = CoverLinkRequestEntity(
     reviewNote = reviewNote
 )
 
-private fun CoverLinkRequestEntity.toFirestoreMap() = mapOf(
+// ✅ FIRESTORE MAP - Updated to include new fields
+private fun CoverLinkRequest.toFirestoreMap() = mapOf(
     "id" to id,
     "userId" to userId,
     "userEmail" to userEmail,
     "country" to country,
     "insuranceName" to insuranceName,
     "memberNumber" to memberNumber,
-    "status" to status,
+    "status" to status.name,
     "submittedAt" to submittedAt,
     "reviewedAt" to reviewedAt,
-    "reviewNote" to reviewNote
+    "reviewNote" to reviewNote,
+    "coverAmount" to coverAmount,
+    "remainingBalance" to remainingBalance,
+    "totalSpent" to totalSpent
 )

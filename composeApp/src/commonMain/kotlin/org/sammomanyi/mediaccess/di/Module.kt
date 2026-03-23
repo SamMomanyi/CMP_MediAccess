@@ -61,6 +61,7 @@ import org.sammomanyi.mediaccess.features.identity.presentation.records.RecordsV
 import org.sammomanyi.mediaccess.features.identity.presentation.registration.RegistrationViewModel
 import org.sammomanyi.mediaccess.features.identity.presentation.verification.VerificationViewModel
 import org.sammomanyi.mediaccess.features.more.presentation.MoreViewModel
+import org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryViewModel
@@ -108,6 +109,7 @@ val sharedModule = module {
         }
     }
 
+    single { ExpenditureRepository(get()) }
     single { PrescriptionRepository(get()) }
     single { PharmacyQueueRepository(get()) }
 
