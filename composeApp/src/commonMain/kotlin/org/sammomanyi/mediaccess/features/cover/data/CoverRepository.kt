@@ -174,6 +174,53 @@ class CoverRepository(
             println("🔴 CoverRepository.sync error: ${e.message}")
         }
     }
+
+    suspend fun updateCoverBalance(
+        coverRequestId: String,
+        newBalance: Double,
+        amountSpent: Double
+    ) {
+        val fs = firestore ?: return
+
+        try {
+            val doc = fs.collection("cover_requests").document(coverRequestId).get()
+            val currentSpent = (doc.get<Number?>("totalSpent") ?: 0).toDouble()
+
+            fs.collection("cover_requests").document(coverRequestId).update(
+                mapOf(
+                    "remainingBalance" to newBalance,
+                    "totalSpent" to (currentSpent + amountSpent)
+                )
+            )
+
+            println("✅ COVER: Updated balance - Remaining: $newBalance, Total spent: ${currentSpent + amountSpent}")
+        } catch (e: Exception) {
+            println("🔴 COVER: Failed to update balance: ${e.message}")
+        }
+    }
+    suspend fun reviewRequest(requestId: String, isApproved: Boolean, note: String) {
+        val fs = firestore ?: return
+
+        try {
+            val newStatus = if (isApproved) CoverStatus.APPROVED else CoverStatus.REJECTED
+
+            fs.collection("cover_requests").document(requestId).update(
+                mapOf(
+                    "status" to newStatus.name,
+                    "reviewedAt" to System.currentTimeMillis(),
+                    "reviewNote" to note,
+                    // ✅ Set initial balances when approved
+                    "coverAmount" to 100000.0,
+                    "remainingBalance" to 100000.0,
+                    "totalSpent" to 0.0
+                )
+            )
+
+            println("✅ COVER: Request reviewed - Status: $newStatus, Balance: 100000.0")
+        } catch (e: Exception) {
+            println("🔴 COVER: Failed to review request: ${e.message}")
+        }
+    }
 }
 
 private fun CoverLinkRequestEntity.toDomain() = CoverLinkRequest(

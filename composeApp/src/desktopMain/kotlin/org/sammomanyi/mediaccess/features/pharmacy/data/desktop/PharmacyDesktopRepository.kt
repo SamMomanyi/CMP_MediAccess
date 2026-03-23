@@ -1,5 +1,6 @@
 package org.sammomanyi.mediaccess.features.pharmacy.data.desktop
 
+import kotlinx.coroutines.flow.firstOrNull
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyQueueEntry
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyStatus
