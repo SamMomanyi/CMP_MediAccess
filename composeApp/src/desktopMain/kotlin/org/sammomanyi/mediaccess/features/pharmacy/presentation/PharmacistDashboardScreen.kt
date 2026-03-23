@@ -23,6 +23,9 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
+import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyQueueEntry
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
 import kotlin.time.ExperimentalTime
@@ -33,11 +36,15 @@ fun PharmacistDashboardScreen(
     account: AdminAccountEntity,
     onLogout: () -> Unit
 ) {
-    val pharmacyRepository: org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository = koinInject()
+    val pharmacyRepository: PharmacyDesktopRepository = koinInject()
+    val expenditureRepository: ExpenditureRepository = koinInject()
+    val coverRepository: CoverRepository = koinInject()
 
     val viewModel = remember(account) {
         PharmacistQueueViewModel(
             pharmacyRepository = pharmacyRepository,
+            expenditureRepository = expenditureRepository,
+            coverRepository = coverRepository,
             pharmacist = account
         )
     }
