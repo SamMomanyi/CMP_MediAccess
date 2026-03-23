@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
+import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyQueueEntry
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
@@ -28,6 +30,8 @@ data class PharmacistQueueState(
 
 class PharmacistQueueViewModel(
     private val pharmacyRepository: PharmacyDesktopRepository,
+    private val expenditureRepository: ExpenditureRepository,
+    private val coverRepository: CoverRepository,
     private val pharmacist: AdminAccountEntity
 ) : ViewModel() {
 
@@ -82,13 +86,23 @@ class PharmacistQueueViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(actionInProgress = true) }
-            val result = pharmacyRepository.markAsDispensed(
+
+            println("💊 PHARMACIST: Starting billing for ${prescription.patientName}, Total: $totalCost")
+
+            // ✅ Use new billing method with expenditure tracking
+            val result = pharmacyRepository.markAsDispensedWithExpenditure(
                 queueEntryId = entry.id,
                 prescriptionId = prescription.id,
-                totalCost = totalCost
+                totalCost = totalCost,
+                pharmacistId = pharmacist.id,
+                pharmacistName = pharmacist.name,
+                expenditureRepository = expenditureRepository,
+                coverRepository = coverRepository
             )
+
             result.fold(
                 onSuccess = {
+                    println("✅ PHARMACIST: Billing complete!")
                     _state.update { it.copy(
                         actionInProgress = false,
                         currentPrescription = null,
@@ -97,6 +111,8 @@ class PharmacistQueueViewModel(
                     refresh()
                 },
                 onFailure = { e ->
+                    println("🔴 PHARMACIST: Billing failed - ${e.message}")
+                    e.printStackTrace()
                     _state.update { it.copy(
                         actionInProgress = false,
                         error = "Failed to dispense: ${e.message}"
