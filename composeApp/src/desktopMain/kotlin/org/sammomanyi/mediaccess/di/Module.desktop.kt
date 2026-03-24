@@ -69,9 +69,6 @@ actual val platformModule = module {
             .build()
     }
 
-
-
-
     // ── Ktor HTTP client (OkHttp engine for desktop JVM) ─────
     single<HttpClient> {
         HttpClient(OkHttp) {
@@ -119,6 +116,7 @@ actual val platformModule = module {
         StaffFirestoreRepository(firestoreClient = get())
     }
     single { PharmacyDesktopRepository(firestoreClient = get()) }
+
     single {
         QueueDesktopRepository(firestoreClient = get())
     }
@@ -126,9 +124,7 @@ actual val platformModule = module {
 //    single { PharmacyQueueRepository(firestore = get()) }
 
     // ── Visit Verification REST client ────────────────────────
-    single {
-        VisitVerificationRestClient(firestoreClient = get())
-    }
+    single { VisitVerificationRestClient(firestoreClient = get()) }
 
 
 

@@ -135,7 +135,7 @@ val sharedModule = module {
     // Register CoverRepository directly — no Impl needed
     single { CoverRepository(dao = null, firestore = get()) }
     single { QueueRepository(get()) }
-    single { ExpenditureRepository(get()) }
+   // single { ExpenditureRepository(get()) }
     // 2. DAOs
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
@@ -187,6 +187,5 @@ val sharedModule = module {
     viewModelOf(::VerificationViewModel)
     viewModelOf(::ExpenditureHistoryViewModel)
     viewModelOf(::ExpenditureSummaryViewModel)
-
 
 }
