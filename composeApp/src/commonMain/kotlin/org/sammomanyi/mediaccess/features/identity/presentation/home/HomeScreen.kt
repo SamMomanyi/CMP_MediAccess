@@ -55,7 +55,6 @@ fun HomeScreen(
     val checkInState by checkInViewModel.state.collectAsStateWithLifecycle()
 
     var showBenefitsDialog by remember { mutableStateOf(false) }
-    var showSpentDialog by remember { mutableStateOf(false) }
     var showQuickActionsDialog by remember { mutableStateOf(false) }
     var showWellnessDialog by remember { mutableStateOf(false) }
 
@@ -123,7 +122,7 @@ fun HomeScreen(
                 CareSection(
                     onVisitClick = onNavigateToCheckIn,
                     onBenefitsClick = { showBenefitsDialog = true },
-                    onSpentClick = { showSpentDialog = true },
+                    onSpentClick = onNavigateToSpent,
                     onHospitalClick =  onNavigateToCheckIn
                 )
             }
@@ -153,9 +152,7 @@ fun HomeScreen(
     if (showBenefitsDialog) {
         BenefitsDialog(onDismiss = { showBenefitsDialog = false })
     }
-    if (showSpentDialog) {
-        SpentDialog(onDismiss = { showSpentDialog = false })
-    }
+
     if (showQuickActionsDialog) {
         QuickActionsDialog(
             onDismiss = { showQuickActionsDialog = false },

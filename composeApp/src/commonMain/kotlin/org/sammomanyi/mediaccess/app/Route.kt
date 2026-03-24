@@ -50,6 +50,9 @@ sealed interface Route {
     @Serializable object CheckIn : Route
     @Serializable
     object PharmacySummary : Route
+
+    @Serializable
+    object ExpenditureHistory : Route
 }
 
 

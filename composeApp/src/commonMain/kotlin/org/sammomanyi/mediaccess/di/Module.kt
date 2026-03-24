@@ -64,6 +64,7 @@ import org.sammomanyi.mediaccess.features.more.presentation.MoreViewModel
 import org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureHistoryViewModel
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureSummaryViewModel
 import org.sammomanyi.mediaccess.features.queue.data.QueueRepository
 import org.sammomanyi.mediaccess.features.wellness.data.WellnessRepository
@@ -117,6 +118,7 @@ val sharedModule = module {
     // Register CoverRepository directly — no Impl needed
     single { CoverRepository(dao = null, firestore = get()) }
     single { QueueRepository(get()) }
+    single { ExpenditureRepository(get()) }
     // 2. DAOs
     single { get<MediAccessDatabase>().userDao }
     single { get<MediAccessDatabase>().medicalRecordDao }
@@ -166,7 +168,7 @@ val sharedModule = module {
     // In Module.kt sharedModule
     viewModelOf(::CheckInViewModel)
     viewModelOf(::VerificationViewModel)
-
+    viewModelOf(::ExpenditureHistoryViewModel)
     viewModelOf(::ExpenditureSummaryViewModel)
 
 }

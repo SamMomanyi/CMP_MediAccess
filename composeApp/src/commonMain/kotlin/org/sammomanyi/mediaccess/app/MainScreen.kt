@@ -113,7 +113,7 @@ fun MainScreen(
                         // Benefits dialog is handled in HomeScreen
                     },
                     onNavigateToSpent = {
-                        // Spent dialog is handled in HomeScreen
+                        navController.navigate(Route.ExpenditureHistory)
                     },
                     onNavigateToNotifications = {
                         navController.navigate(Route.Notifications)
@@ -197,7 +197,11 @@ fun MainScreen(
                     }
                 )
             }
-
+            composable<Route.ExpenditureHistory> {
+                org.sammomanyi.mediaccess.features.pharmacy.presentation.ExpenditureHistoryScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
         }
     }
