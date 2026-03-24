@@ -1,6 +1,7 @@
 package org.sammomanyi.mediaccess.features.pharmacy.data.desktop
 
 import kotlinx.coroutines.flow.firstOrNull
+import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
 import org.sammomanyi.mediaccess.features.cover.data.desktop.FirestoreRestClient
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyQueueEntry
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyStatus
@@ -197,8 +198,8 @@ class PharmacyDesktopRepository(
         totalCost: Double,
         pharmacistId: String,
         pharmacistName: String,
-        expenditureRepository: org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository,
-        coverRepository: org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+        expenditureRepository: DesktopExpenditureRepository,
+        coverRepository: DesktopCoverRepository
     ): Result<Unit> = runCatching {
         println("🟪 PHARMACY: Starting billing for queue entry: $queueEntryId")
 

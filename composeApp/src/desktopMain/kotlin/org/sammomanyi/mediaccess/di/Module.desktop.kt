@@ -43,6 +43,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.IdentityRep
 import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.DesktopExpenditureRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.presentation.PharmacistQueueViewModel
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
@@ -116,7 +117,7 @@ actual val platformModule = module {
         StaffFirestoreRepository(firestoreClient = get())
     }
     single { PharmacyDesktopRepository(firestoreClient = get()) }
-
+    single { DesktopExpenditureRepository(firestoreClient = get()) }
     single {
         QueueDesktopRepository(firestoreClient = get())
     }

@@ -12,7 +12,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.sammomanyi.mediaccess.features.auth.data.local.AdminAccountEntity
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
+import org.sammomanyi.mediaccess.features.cover.data.desktop.DesktopCoverRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.ExpenditureRepository
+import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.DesktopExpenditureRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.PharmacyQueueEntry
 import org.sammomanyi.mediaccess.features.pharmacy.domain.model.Prescription
@@ -30,8 +32,8 @@ data class PharmacistQueueState(
 
 class PharmacistQueueViewModel(
     private val pharmacyRepository: PharmacyDesktopRepository,
-    private val expenditureRepository: ExpenditureRepository,
-    private val coverRepository: CoverRepository,
+    private val expenditureRepository: DesktopExpenditureRepository,
+    private val coverRepository: DesktopCoverRepository,
     private val pharmacist: AdminAccountEntity
 ) : ViewModel() {
 

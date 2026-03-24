@@ -3,6 +3,7 @@ package org.sammomanyi.mediaccess.features.cover.data.desktop
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import org.sammomanyi.mediaccess.features.cover.data.local.CoverLinkRequestDao
 import org.sammomanyi.mediaccess.features.cover.domain.model.CoverLinkRequest
@@ -93,6 +94,12 @@ class DesktopCoverRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun getApprovedCoverForUser(userId: String): CoverLinkRequest? {
+        return dao.getRequestsForUser(userId).firstOrNull()
+            ?.map { it.toDomain() }
+            ?.firstOrNull { it.status == CoverStatus.APPROVED }
     }
 }
 
