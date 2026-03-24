@@ -110,9 +110,26 @@ val sharedModule = module {
         }
     }
 
-    single { ExpenditureRepository(get()) }
-    single { PrescriptionRepository(get()) }
-    single { PharmacyQueueRepository(get()) }
+//    single { ExpenditureRepository(get()) }
+//    single { PrescriptionRepository(get()) }
+//    single { PharmacyQueueRepository(get()) }
+
+    // Change the instances above to nullable so that the desktop app doesn't crash if they are unavailable
+    single<ExpenditureRepository?> {
+        val firestore: dev.gitlive.firebase.firestore.FirebaseFirestore? = getOrNull()
+        if (firestore != null) ExpenditureRepository(firestore) else null
+    }
+
+    single<PrescriptionRepository?> {
+        val firestore: dev.gitlive.firebase.firestore.FirebaseFirestore? = getOrNull()
+        if (firestore != null) PrescriptionRepository(firestore) else null
+    }
+
+    single<PharmacyQueueRepository?> {
+        val firestore: dev.gitlive.firebase.firestore.FirebaseFirestore? = getOrNull()
+        if (firestore != null) PharmacyQueueRepository(firestore) else null
+    }
+
 
     single { NewsService(get()) }
     // Register CoverRepository directly — no Impl needed
@@ -170,5 +187,6 @@ val sharedModule = module {
     viewModelOf(::VerificationViewModel)
     viewModelOf(::ExpenditureHistoryViewModel)
     viewModelOf(::ExpenditureSummaryViewModel)
+
 
 }

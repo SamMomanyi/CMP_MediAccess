@@ -44,6 +44,7 @@ import org.sammomanyi.mediaccess.features.identity.domain.repository.RecordsRepo
 import org.sammomanyi.mediaccess.features.pharmacy.data.PharmacyQueueRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.PrescriptionRepository
 import org.sammomanyi.mediaccess.features.pharmacy.data.desktop.PharmacyDesktopRepository
+import org.sammomanyi.mediaccess.features.pharmacy.presentation.PharmacistQueueViewModel
 import org.sammomanyi.mediaccess.features.queue.data.desktop.QueueDesktopRepository
 import org.sammomanyi.mediaccess.features.queue.data.desktop.StaffFirestoreRepository
 import org.sammomanyi.mediaccess.features.queue.presentation.DoctorQueueViewModel
@@ -145,7 +146,6 @@ actual val platformModule = module {
     viewModelOf(::StaffManagementViewModel)
     viewModelOf(::VisitVerificationViewModel)
     viewModelOf(::DoctorQueueViewModel)
-
-
+    viewModelOf(::PharmacistQueueViewModel)
 
 }
