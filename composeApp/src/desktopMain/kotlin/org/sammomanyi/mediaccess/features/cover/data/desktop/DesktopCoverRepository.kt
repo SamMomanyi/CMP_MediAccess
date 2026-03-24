@@ -13,7 +13,7 @@ data class CoverRequestsState(
     val requests: List<CoverLinkRequest> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val lastRefreshedAt: Long? = null   // epoch millis — shown in UI
+    val lastRefreshedAt: Long? = null
 )
 
 class DesktopCoverRepository(
@@ -40,7 +40,6 @@ class DesktopCoverRepository(
                 requests = requests,
                 isLoading = false,
                 lastRefreshedAt = System.currentTimeMillis()
-                //changed from lastRefreshedAt = Clock.System.now().toEpochMilliseconds()
             )
         } catch (e: Exception) {
             _state.value = _state.value.copy(
@@ -76,11 +75,8 @@ class DesktopCoverRepository(
                 )
             )
 
-            // Update local Room cache
             dao.updateStatus(id, status.name, now, note)
 
-            // Optimistically update in-memory state so UI reflects change immediately
-            // without waiting for a full refresh
             val updated = _state.value.requests.map {
                 if (it.id == id) it.copy(
                     status = status,
@@ -96,10 +92,63 @@ class DesktopCoverRepository(
         }
     }
 
+    // ✅ NEW: Get approved cover for a specific user
     suspend fun getApprovedCoverForUser(userId: String): CoverLinkRequest? {
-        return dao.getRequestsForUser(userId).firstOrNull()
-            ?.map { it.toDomain() }
-            ?.firstOrNull { it.status == CoverStatus.APPROVED }
+        // First check in-memory state
+        val fromState = _state.value.requests.firstOrNull {
+            it.userId == userId && it.status == CoverStatus.APPROVED
+        }
+        if (fromState != null) return fromState
+
+        // If not in state, fetch fresh from Firestore
+        return try {
+            val rawDocs = firestoreClient.getCollection("cover_requests")
+            rawDocs.mapNotNull { doc ->
+                try { doc.toCoverLinkRequest() }
+                catch (e: Exception) { null }
+            }.firstOrNull {
+                it.userId == userId && it.status == CoverStatus.APPROVED
+            }
+        } catch (e: Exception) {
+            println("🔴 Failed to get approved cover for user $userId: ${e.message}")
+            null
+        }
+    }
+
+    // ✅ NEW: Update cover balance after billing
+    suspend fun updateCoverBalance(
+        coverRequestId: String,
+        newBalance: Double,
+        amountSpent: Double
+    ) {
+        try {
+            // Get current document to read totalSpent
+            val currentDoc = firestoreClient.getDocument("cover_requests", coverRequestId)
+            val currentSpent = (currentDoc?.get("totalSpent") as? Number)?.toDouble() ?: 0.0
+
+            // Update Firestore
+            firestoreClient.updateDocument(
+                collection = "cover_requests",
+                documentId = coverRequestId,
+                fields = mapOf(
+                    "remainingBalance" to newBalance,
+                    "totalSpent" to (currentSpent + amountSpent)
+                )
+            )
+
+            // Update local state
+            val updated = _state.value.requests.map {
+                if (it.id == coverRequestId) it.copy(
+                    remainingBalance = newBalance,
+                    totalSpent = currentSpent + amountSpent
+                ) else it
+            }
+            _state.value = _state.value.copy(requests = updated)
+
+            println("✅ COVER: Updated balance - Remaining: $newBalance, Total spent: ${currentSpent + amountSpent}")
+        } catch (e: Exception) {
+            println("🔴 COVER: Failed to update balance: ${e.message}")
+        }
     }
 }
 
@@ -117,6 +166,10 @@ private fun Map<String, Any?>.toCoverLinkRequest(): CoverLinkRequest {
         ),
         submittedAt = (get("submittedAt") as? Long) ?: 0L,
         reviewedAt = get("reviewedAt") as? Long,
-        reviewNote = get("reviewNote") as? String ?: ""
+        reviewNote = get("reviewNote") as? String ?: "",
+        // ✅ Parse financial fields
+        coverAmount = (get("coverAmount") as? Number)?.toDouble() ?: 100000.0,
+        remainingBalance = (get("remainingBalance") as? Number)?.toDouble() ?: 100000.0,
+        totalSpent = (get("totalSpent") as? Number)?.toDouble() ?: 0.0
     )
 }
