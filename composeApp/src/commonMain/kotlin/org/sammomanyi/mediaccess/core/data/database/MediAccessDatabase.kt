@@ -19,7 +19,7 @@ import org.sammomanyi.mediaccess.features.identity.data.local.*
         CoverLinkRequestEntity::class,
                 AdminEntity::class,
     ],
-    version = 6, // Keep version 2 to handle the new tables
+    version = 7, // Keep version 2 to handle the new tables
     exportSchema = true
 )
 @ConstructedBy(MediAccessDatabaseConstructor::class)

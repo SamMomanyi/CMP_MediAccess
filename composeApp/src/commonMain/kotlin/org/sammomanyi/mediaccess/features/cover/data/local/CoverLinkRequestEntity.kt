@@ -17,5 +17,10 @@ data class CoverLinkRequestEntity(
     val status: String,       // "PENDING" | "APPROVED" | "REJECTED"
     val submittedAt: Long,
     val reviewedAt: Long?,
-    val reviewNote: String
+    val reviewNote: String,
+
+    //ADDed  THESE recently
+    val coverAmount: Double,
+    val remainingBalance: Double,
+    val totalSpent: Double
 )

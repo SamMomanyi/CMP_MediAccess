@@ -206,12 +206,9 @@ class PharmacyDesktopRepository(
         // 1. Get prescription details
         val prescription = getPrescription(prescriptionId) ?: throw Exception("Prescription not found")
 
-        // 2. Get patient's cover info
-        val coverRequests = coverRepository.getAllRequests().firstOrNull() ?: emptyList()
-        val patientCover = coverRequests.firstOrNull {
-            it.userId == prescription.patientUserId &&
-                    it.status == org.sammomanyi.mediaccess.features.cover.domain.model.CoverStatus.APPROVED
-        } ?: throw Exception("No approved cover found")
+        // 2. Get patient's approved cover
+        val patientCover = coverRepository.getApprovedCoverForUser(prescription.patientUserId)
+            ?: throw Exception("No approved cover found for patient")
 
         val consultationFee = 500.0
         val medicationCost = totalCost
@@ -233,7 +230,7 @@ class PharmacyDesktopRepository(
             doctorName = prescription.doctorName,
             pharmacistId = pharmacistId,
             pharmacistName = pharmacistName,
-            visitType = prescription.queueEntryId, // Will be improved later
+            visitType = "Consultation",
             prescriptionId = prescriptionId,
             consultationFee = consultationFee,
             medicationCost = medicationCost,
