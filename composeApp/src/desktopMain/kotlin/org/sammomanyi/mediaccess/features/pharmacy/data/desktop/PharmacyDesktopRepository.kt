@@ -258,5 +258,34 @@ class PharmacyDesktopRepository(
         markAsDispensed(queueEntryId, prescriptionId, totalCost)
 
         println("✅ PHARMACY: Billing complete! New balance: $coverBalanceAfter")
+
+        // ⬇️ ADDED STEP 6: KILL THE ZOMBIE VISIT ⬇️
+        try {
+            // Find the active visit code for this specific patient
+            val activeVisits = firestoreClient.getCollectionWithIds("visit_codes")
+                .filter { (_, fields) ->
+                    fields["userId"] == prescription.patientUserId &&
+                            fields["status"] != "COMPLETED"
+                }
+
+            // Mark it as COMPLETED and inactive
+            activeVisits.forEach { (visitDocId, _) ->
+                firestoreClient.updateDocument(
+                    collection = "visit_codes",
+                    documentId = visitDocId,
+                    fields = mapOf(
+                        "status" to "COMPLETED",
+                        "isActive" to false,
+                        "completedAt" to System.currentTimeMillis()
+                    )
+                )
+                println("✅ PHARMACY: Master visit code $visitDocId closed successfully.")
+            }
+        } catch (e: Exception) {
+            println("🔴 PHARMACY: Failed to close master visit code: ${e.message}")
+        }
+
+        println("✅ PHARMACY: Billing complete! New balance: $coverBalanceAfter")
+
     }
 }
