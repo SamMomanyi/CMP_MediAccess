@@ -151,6 +151,72 @@ class CheckInViewModel(
         }
     }
 
+//    fun generateCode(purpose: VisitPurpose) {
+//        if (_state.value.coverGate !is CoverGateState.Approved) return
+//        val userId = currentUserId ?: return
+//
+//        viewModelScope.launch {
+//            _state.update { it.copy(codeState = CheckInCodeState.Generating) }
+//
+//            // Check for active visits in both queues
+//            val activeDocEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
+//            val activePharmacyEntry = pharmacyQueueRepository.observePatientPharmacyQueue(userId).firstOrNull()
+//
+//            if (activeDocEntry != null || activePharmacyEntry != null) {
+//                _state.update { it.copy(
+//                    codeState = CheckInCodeState.GenerationFailed(
+//                        "You already have an active visit. Please complete it before generating a new code."
+//                    )
+//                ) }
+//                return@launch
+//            }
+//
+//            // Check for existing visit code
+//            when (val existingCodeResult = identityRepository.getActiveVisitCode(userId)) {
+//                is Result.Success -> {
+//                    if (existingCodeResult.data != null) {
+//                        _state.update { it.copy(
+//                            codeState = CheckInCodeState.Ready(
+//                                visitCode = existingCodeResult.data,
+//                                secondsRemaining = 900L
+//                            ),
+//                            queueState = QueueState.NotQueued
+//                        ) }
+//                        startCountdown(existingCodeResult.data)
+//                        startDoctorQueueListener(userId)
+//                        startPharmacyQueueListener(userId)
+//                        return@launch
+//                    }
+//                }
+//                is Result.Error -> {}
+//            }
+//
+//            // Generate new code
+//            val result = generateVisitCodeUseCase(userId, purpose)
+//            when (result) {
+//                is Result.Success -> {
+//                    _state.update { it.copy(
+//                        codeState = CheckInCodeState.Ready(
+//                            visitCode = result.data,
+//                            secondsRemaining = 900L
+//                        ),
+//                        queueState = QueueState.NotQueued
+//                    ) }
+//                    startCountdown(result.data)
+//                    startDoctorQueueListener(userId)
+//                    startPharmacyQueueListener(userId)
+//                }
+//                is Result.Error -> {
+//                    _state.update { it.copy(
+//                        codeState = CheckInCodeState.GenerationFailed(
+//                            "Could not generate code. Please try again."
+//                        )
+//                    ) }
+//                }
+//            }
+//        }
+//    }
+
     fun generateCode(purpose: VisitPurpose) {
         if (_state.value.coverGate !is CoverGateState.Approved) return
         val userId = currentUserId ?: return
@@ -162,7 +228,11 @@ class CheckInViewModel(
             val activeDocEntry = queueRepository.observePatientQueueEntry(userId).firstOrNull()
             val activePharmacyEntry = pharmacyQueueRepository.observePatientPharmacyQueue(userId).firstOrNull()
 
-            if (activeDocEntry != null || activePharmacyEntry != null) {
+            // ⬇️ THE FIX: Check if the entries actually represent an ONGOING visit
+            val hasActiveDocVisit = activeDocEntry != null && activeDocEntry.status != QueueStatus.DONE.name
+            val hasActivePharmacyVisit = activePharmacyEntry != null && activePharmacyEntry.status != PharmacyStatus.COMPLETED
+
+            if (hasActiveDocVisit || hasActivePharmacyVisit) {
                 _state.update { it.copy(
                     codeState = CheckInCodeState.GenerationFailed(
                         "You already have an active visit. Please complete it before generating a new code."
@@ -192,8 +262,7 @@ class CheckInViewModel(
             }
 
             // Generate new code
-            val result = generateVisitCodeUseCase(userId, purpose)
-            when (result) {
+            when (val result = generateVisitCodeUseCase(userId, purpose)) {
                 is Result.Success -> {
                     _state.update { it.copy(
                         codeState = CheckInCodeState.Ready(
@@ -371,4 +440,6 @@ class CheckInViewModel(
         doctorQueueListenerJob?.cancel()
         pharmacyQueueListenerJob?.cancel()
     }
+
+
 }

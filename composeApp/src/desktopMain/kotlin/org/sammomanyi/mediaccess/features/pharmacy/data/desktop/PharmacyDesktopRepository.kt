@@ -284,8 +284,9 @@ class PharmacyDesktopRepository(
         } catch (e: Exception) {
             println("🔴 PHARMACY: Failed to close master visit code: ${e.message}")
         }
+        // ✨ CLOSE THE VISIT CODE
 
         println("✅ PHARMACY: Billing complete! New balance: $coverBalanceAfter")
-
     }
+
 }
