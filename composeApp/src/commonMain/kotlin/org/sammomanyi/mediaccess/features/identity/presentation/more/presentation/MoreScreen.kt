@@ -30,7 +30,7 @@ fun MoreScreen(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) } // NEW STATE
+    var showAboutDialog by remember { mutableStateOf(false) }
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     LazyColumn(
@@ -68,8 +68,15 @@ fun MoreScreen(
                 onItemClick = { item ->
                     when (item.title) {
                         "Help Center" -> viewModel.onAction(MoreAction.OnHelpCenter)
-                        "About MediAccess" -> viewModel.onAction(MoreAction.OnAbout)
-                        "Send Feedback" -> viewModel.onAction(MoreAction.OnFeedback)
+                        "About MediAccess" -> showAboutDialog = true
+                        "Send Feedback" -> {
+                            try {
+                                // Natively opens default email client on Android, iOS, and Desktop
+                                uriHandler.openUri("mailto:support@mediaccess.co.ke?subject=MediAccess%20App%20Feedback")
+                            } catch (e: Exception) {
+                                println("🔴 Could not open email client: ${e.message}")
+                            }
+                        }
                     }
                 }
             )
@@ -403,6 +410,7 @@ private fun MenuItemRow(
         )
     }
 }
+
 @Composable
 private fun AboutDialog(
     onDismissRequest: () -> Unit
@@ -454,19 +462,7 @@ private fun AboutDialog(
         }
     )
 }
-private fun sendFeedbackEmail(context: android.content.Context) {
-    val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
-        data = android.net.Uri.parse("mailto:") // Only email apps should handle this
-        putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("support@mediaccess.co.ke"))
-        putExtra(android.content.Intent.EXTRA_SUBJECT, "MediAccess App Feedback")
-    }
 
-    try {
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        android.widget.Toast.makeText(context, "No email app found.", android.widget.Toast.LENGTH_SHORT).show()
-    }
-}
 data class MenuItem(
     val icon: ImageVector,
     val title: String,
