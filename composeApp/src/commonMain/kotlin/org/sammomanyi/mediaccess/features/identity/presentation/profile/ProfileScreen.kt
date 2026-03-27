@@ -17,9 +17,16 @@ import org.koin.core.parameter.parametersOf
 fun ProfileScreen(
     padding: PaddingValues,
     onLogout: () -> Unit,
-    viewModel: ProfileViewModel = koinViewModel { parametersOf(onLogout) }
+    viewModel: ProfileViewModel = koinViewModel() // ⬅️ FIX 1: Removed Koin parametersOf
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // ⬅️ FIX 2: Listen for the state change to trigger navigation
+    LaunchedEffect(state.isLoggedOut) {
+        if (state.isLoggedOut) {
+            onLogout()
+        }
+    }
 
     if (state.showLogoutDialog) {
         LogoutConfirmationDialog(
