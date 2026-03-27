@@ -31,7 +31,7 @@ fun MoreScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) } // NEW STATE
-    val context = androidx.compose.ui.platform.LocalContext.current // NEW CONTEXT
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     LazyColumn(
         modifier = Modifier
