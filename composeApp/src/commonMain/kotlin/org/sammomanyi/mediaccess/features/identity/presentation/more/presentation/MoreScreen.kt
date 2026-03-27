@@ -30,6 +30,7 @@ fun MoreScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -447,7 +448,19 @@ private fun AboutDialog(
         }
     )
 }
+private fun sendFeedbackEmail(context: android.content.Context) {
+    val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+        data = android.net.Uri.parse("mailto:") // Only email apps should handle this
+        putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("support@mediaccess.co.ke"))
+        putExtra(android.content.Intent.EXTRA_SUBJECT, "MediAccess App Feedback")
+    }
 
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        android.widget.Toast.makeText(context, "No email app found.", android.widget.Toast.LENGTH_SHORT).show()
+    }
+}
 data class MenuItem(
     val icon: ImageVector,
     val title: String,
