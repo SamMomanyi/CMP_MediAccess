@@ -27,9 +27,11 @@ fun MoreScreen(
     onLogout: () -> Unit,
     viewModel: MoreViewModel = koinViewModel { parametersOf(onLogout) }
 ) {
+
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
-
+    var showAboutDialog by remember { mutableStateOf(false) } // NEW STATE
+    val context = androidx.compose.ui.platform.LocalContext.current // NEW CONTEXT
 
     LazyColumn(
         modifier = Modifier
@@ -190,6 +192,10 @@ fun MoreScreen(
                 }
             }
         )
+    }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismissRequest = { showAboutDialog = false })
     }
 }
 
