@@ -11,8 +11,8 @@ import org.sammomanyi.mediaccess.features.identity.domain.use_case.LogoutUseCase
 
 class ProfileViewModel(
     private val getProfileUseCase: GetProfileUseCase,
-    private val logoutUseCase: LogoutUseCase,
-    private val onLogoutSuccess: () -> Unit
+    private val logoutUseCase: LogoutUseCase
+    // ⬅️ FIX 1: Removed onLogoutSuccess callback from constructor
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -43,7 +43,13 @@ class ProfileViewModel(
 
             when (logoutUseCase()) {
                 is Result.Success -> {
-                    onLogoutSuccess()
+                    // ⬅️ FIX 2: Update the state flag instead of invoking a callback
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoggedOut = true
+                        )
+                    }
                 }
                 is Result.Error -> {
                     _state.update {
