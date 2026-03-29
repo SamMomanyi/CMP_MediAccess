@@ -3,8 +3,10 @@ package org.sammomanyi.mediaccess.features.verification.presentation.desktop
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,7 +30,11 @@ fun VisitVerificationScreen(viewModel: VisitVerificationViewModel = koinViewMode
 
         // ── Left panel: verification + assignment ─────────────
         Column(
-            modifier = Modifier.width(420.dp).fillMaxHeight().padding(16.dp),
+            modifier = Modifier
+                .width(420.dp)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()) // ✨ THE MAGIC FIX: Makes the whole left panel scrollable
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text("Check-In Verification", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
