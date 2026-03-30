@@ -42,6 +42,7 @@ fun HomeScreen(
     padding: PaddingValues,
     onNavigateToHospitals: () -> Unit,
     onNavigateToBenefits: () -> Unit,
+    onNavigateToChatBot: () -> Unit,
     onNavigateToSpent: () -> Unit,
     onNavigateToLinkCover: () -> Unit,
     onNavigateToNotifications: () -> Unit,

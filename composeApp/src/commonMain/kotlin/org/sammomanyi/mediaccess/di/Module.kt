@@ -26,6 +26,8 @@ import org.sammomanyi.mediaccess.core.data.database.getRoomDatabase
 import org.sammomanyi.mediaccess.core.data.preferences.ThemeRepository
 import org.sammomanyi.mediaccess.core.data.preferences.createDataStore
 import org.sammomanyi.mediaccess.core.presentation.theme.ThemeViewModel
+import org.sammomanyi.mediaccess.features.chatbot.data.GeminiRepository
+import org.sammomanyi.mediaccess.features.chatbot.presentation.ChatbotViewModel
 import org.sammomanyi.mediaccess.features.cover.data.CoverRepository
 import org.sammomanyi.mediaccess.features.cover.presentation.CoverViewModel
 import org.sammomanyi.mediaccess.features.identity.data.remote.NewsService
@@ -153,6 +155,7 @@ val sharedModule = module {
     single { Firebase.auth }
     single { Firebase.firestore }
     single { WellnessRepository(get()) }
+    single { GeminiRepository(get()) }
     // 5. Use Cases (Cleaned duplicates)
     singleOf(::RegisterUserUseCase)
     singleOf(::LoginUserUseCase)
@@ -187,5 +190,5 @@ val sharedModule = module {
     viewModelOf(::VerificationViewModel)
     viewModelOf(::ExpenditureHistoryViewModel)
     viewModelOf(::ExpenditureSummaryViewModel)
-
+    viewModelOf(::ChatbotViewModel)
 }
