@@ -36,7 +36,8 @@ data class BottomNavItem(
 @Composable
 fun MainScreen(
     onLogout: () -> Unit,
-    onNavigateToLinkCover: () -> Unit
+    onNavigateToLinkCover: () -> Unit,
+    onNavigateToChatbot: () -> Unit
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -123,7 +124,8 @@ fun MainScreen(
                     },
                     onNavigateToWellness = { navController.navigate(Route.Wellness) },
                     onNavigateToLinkCover = { navController.navigate(Route.LinkCover) },
-                    onNavigateToCheckIn = { navController.navigate(Route.CheckIn) }  // ← ADD
+                    onNavigateToCheckIn = { navController.navigate(Route.CheckIn) },  // ← ADD,
+                    onNavigateToChatbot = { onNavigateToChatbot }
                 )
             }
 
@@ -176,7 +178,7 @@ fun MainScreen(
             composable<Route.CheckIn> {
                 CheckInScreen(
                     onBack = { navController.popBackStack() },
-                            onNavigateToWaitingRoom = { navController.navigate(Route.WaitingRoom) }
+                    onNavigateToWaitingRoom = { navController.navigate(Route.WaitingRoom) }
                 )
             }
 

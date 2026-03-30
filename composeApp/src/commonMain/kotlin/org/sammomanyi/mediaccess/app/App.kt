@@ -144,6 +144,9 @@ fun App() {
                         // ✅ Pass LinkCover navigation into MainScreen
                         onNavigateToLinkCover = {
                             navController.navigate(Route.LinkCover)
+                        },
+                        onNavigateToChatbot = {
+                            navController.navigate(Route.Chatbot)
                         }
                     )
                 }
@@ -179,6 +182,12 @@ fun App() {
                             popUpTo(Route.WaitingRoom) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            composable<Route.Chatbot> {
+                org.sammomanyi.mediaccess.features.chatbot.presentation.ChatbotScreen(
+                    onBack = { navController.popBackStack() }
                 )
             }
 

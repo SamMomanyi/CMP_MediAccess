@@ -42,7 +42,7 @@ fun HomeScreen(
     padding: PaddingValues,
     onNavigateToHospitals: () -> Unit,
     onNavigateToBenefits: () -> Unit,
-    onNavigateToChatBot: () -> Unit,
+    onNavigateToChatbot: () -> Unit,
     onNavigateToSpent: () -> Unit,
     onNavigateToLinkCover: () -> Unit,
     onNavigateToNotifications: () -> Unit,
@@ -62,6 +62,7 @@ fun HomeScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
+    Box(modifier = Modifier.fillMaxSize()) {
     PullToRefreshBox(
         isRefreshing = state.isRefreshing,
         onRefresh = { viewModel.onAction(HomeAction.OnRefresh) },
@@ -148,6 +149,19 @@ fun HomeScreen(
 
             item { Spacer(modifier = Modifier.height(24.dp)) }
         }
+
+        FloatingActionButton(
+            onClick = onNavigateToChatbot,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 90.dp, end = 16.dp), // Lifted slightly above bottom nav
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
+        }
+    }
+
     }
 
     if (showBenefitsDialog) {
