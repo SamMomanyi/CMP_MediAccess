@@ -23,7 +23,7 @@ class GeminiRepository(private val httpClient: HttpClient) {
             println("🔵 GeminiRepository: Sending message: \"$userMessage\"")
             println("🔵 GeminiRepository: API key present = ${apiKey.isNotBlank()}")
 
-            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+            val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
 
             val systemPrompt = "You are 'MediBot', a helpful, empathetic, and professional health assistant inside the MediAccess app. Answer the user's health question briefly. Always include a short disclaimer that you are an AI and they should consult their doctor. User says: $userMessage"
 
