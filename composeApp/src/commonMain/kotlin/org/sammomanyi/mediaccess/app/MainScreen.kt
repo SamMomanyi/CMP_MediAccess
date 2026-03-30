@@ -125,7 +125,7 @@ fun MainScreen(
                     onNavigateToWellness = { navController.navigate(Route.Wellness) },
                     onNavigateToLinkCover = { navController.navigate(Route.LinkCover) },
                     onNavigateToCheckIn = { navController.navigate(Route.CheckIn) },  // ← ADD,
-                    onNavigateToChatbot = { onNavigateToChatbot }
+                    onNavigateToChatbot = { onNavigateToChatbot() }
                 )
             }
 
