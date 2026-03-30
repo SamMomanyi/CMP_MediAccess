@@ -53,6 +53,9 @@ sealed interface Route {
 
     @Serializable
     object ExpenditureHistory : Route
+
+    @Serializable
+    data object Chatbot : Route
 }
 
 
