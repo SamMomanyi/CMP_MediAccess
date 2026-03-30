@@ -40,6 +40,10 @@ buildkonfig {
             localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""
         )
         buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "GOOGLE_WEB_CLIENT_ID", project.findProperty("GOOGLE_WEB_CLIENT_ID")?.toString() ?: "")
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "GEMINI_API_KEY",
+            localProperties.getProperty("GEMINI_API_KEY")?:"")
     }
 }
 kotlin {
