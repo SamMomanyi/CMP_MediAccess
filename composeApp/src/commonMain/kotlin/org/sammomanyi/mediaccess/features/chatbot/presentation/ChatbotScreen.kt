@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -52,34 +53,66 @@ class ChatbotViewModel(private val repository: GeminiRepository) : ViewModel() {
 }
 
 @Composable
+
 fun ChatbotScreen(onBack: () -> Unit, viewModel: ChatbotViewModel = koinViewModel()) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var inputText by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    // Auto-scroll to latest message
+    val listState = rememberLazyListState()
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding() // ← this is the key fix: shrinks the column when keyboard opens
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         // Top Bar
         Surface(shadowElevation = 4.dp, color = MaterialTheme.colorScheme.surface) {
-            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
                 Icon(Icons.Default.SmartToy, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text("MediAccess Assistant", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "MediAccess Assistant",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
         // Chat History
-        LazyColumn(modifier = Modifier.weight(1f).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(
+            state = listState, // ← attach scroll state
+            modifier = Modifier.weight(1f).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             items(messages) { msg ->
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (msg.isUser) Alignment.CenterEnd else Alignment.CenterStart) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = if (msg.isUser) Alignment.CenterEnd else Alignment.CenterStart
+                ) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = if (msg.isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                        color = if (msg.isUser) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
                             text = msg.text,
                             modifier = Modifier.padding(12.dp),
-                            color = if (msg.isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (msg.isUser) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -95,7 +128,10 @@ fun ChatbotScreen(onBack: () -> Unit, viewModel: ChatbotViewModel = koinViewMode
 
         // Input Area
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
-            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
@@ -106,6 +142,7 @@ fun ChatbotScreen(onBack: () -> Unit, viewModel: ChatbotViewModel = koinViewMode
                 Spacer(Modifier.width(8.dp))
                 FloatingActionButton(
                     onClick = {
+                        println("🔵 ChatbotScreen: Send tapped, message = \"$inputText\"")
                         viewModel.sendMessage(inputText)
                         inputText = ""
                     },
