@@ -42,13 +42,13 @@ class GeminiRepository(private val httpClient: HttpClient) {
             when (httpResponse.status.value) {
                 429 -> {
                     if (attempt < 2) {
-                        val waitMs = (attempt + 1) * 5000L
+                        val waitMs = (attempt + 1) * 15000L  // 15s, then 30s — more breathing room
                         println("🟡 GeminiRepository: Rate limited, retrying in ${waitMs}ms (attempt ${attempt + 1})...")
                         delay(waitMs)
                         sendWithRetry(userMessage, attempt + 1)
                     } else {
                         println("🔴 GeminiRepository: Rate limit exceeded after ${attempt + 1} attempts")
-                        "MediBot is currently busy. Please wait a moment and try again."
+                        "MediBot is a bit overwhelmed right now. Please try again in a few minutes."
                     }
                 }
                 200 -> {
