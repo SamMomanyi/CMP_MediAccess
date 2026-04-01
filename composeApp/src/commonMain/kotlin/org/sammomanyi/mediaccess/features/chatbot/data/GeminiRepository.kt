@@ -19,8 +19,8 @@ import org.sammomanyi.mediaccess.BuildKonfig
 
 class GeminiRepository(private val httpClient: HttpClient) {
 
-    suspend fun sendMessage(userMessage: String): String {
-        return sendWithRetry(userMessage, attempt = 0)
+    suspend fun sendMessage(userMessage: String, systemPrompt: String): String {
+        return sendWithRetry(userMessage, systemPrompt, attempt = 0)
     }
 
     private suspend fun sendWithRetry(userMessage: String, attempt: Int): String {
