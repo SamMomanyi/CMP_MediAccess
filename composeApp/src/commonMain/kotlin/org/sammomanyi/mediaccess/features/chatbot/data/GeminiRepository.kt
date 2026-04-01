@@ -45,10 +45,8 @@ class GeminiRepository(private val httpClient: HttpClient) {
                         val waitMs = (attempt + 1) * 15000L  // 15s, then 30s — more breathing room
                         println("🟡 GeminiRepository: Rate limited, retrying in ${waitMs}ms (attempt ${attempt + 1})...")
                         delay(waitMs)
-                        sendWithRetry(
-                            userMessage, attempt + 1,
-                            attempt = TODO()
-                        )
+                        // ✨ FIX 2: Correctly pass all 3 parameters in the right order! No TODOs!
+                        sendWithRetry(userMessage, systemPrompt, attempt + 1)
                     } else {
                         println("🔴 GeminiRepository: Rate limit exceeded after ${attempt + 1} attempts")
                         "MediBot is a bit overwhelmed right now. Please try again in a few minutes."
