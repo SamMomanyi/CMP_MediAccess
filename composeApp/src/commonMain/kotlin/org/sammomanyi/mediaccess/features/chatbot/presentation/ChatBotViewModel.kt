@@ -20,15 +20,12 @@ class ChatbotViewModel(private val repository: GeminiRepository) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    fun sendMessage(text: String) {
+    fun sendMessage(text: String, systemPrompt: String = specialties.first().systemPrompt) {
         if (text.isBlank()) return
-
-        // Add user message
         _messages.update { it + ChatMessage(text, isUser = true) }
         _isLoading.value = true
-
         viewModelScope.launch {
-            val response = repository.sendMessage(text)
+            val response = repository.sendMessage(text, systemPrompt)
             _messages.update { it + ChatMessage(response, isUser = false) }
             _isLoading.value = false
         }
