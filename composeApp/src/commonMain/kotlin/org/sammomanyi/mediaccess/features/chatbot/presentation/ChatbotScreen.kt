@@ -189,6 +189,8 @@ fun ChatbotScreen(
                     placeholder = { Text("Ask a health question...", fontSize = 13.sp) },
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF1A1A1A),
+                        unfocusedTextColor = Color(0xFF1A1A1A),
                         focusedBorderColor = MediBotGreen,
                         unfocusedBorderColor = Color(0xFFDDDDDD),
                         focusedContainerColor = Color(0xFFF8F8F8),
