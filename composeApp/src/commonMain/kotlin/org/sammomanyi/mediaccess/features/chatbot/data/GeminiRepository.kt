@@ -23,7 +23,7 @@ class GeminiRepository(private val httpClient: HttpClient) {
         return sendWithRetry(userMessage, systemPrompt, attempt = 0)
     }
 
-    private suspend fun sendWithRetry(userMessage: String, attempt: Int): String {
+    private suspend fun sendWithRetry(userMessage: String, systemPrompt: String, attempt: Int): String {
         return try {
             val apiKey = BuildKonfig.GEMINI_API_KEY
             println("🔵 GeminiRepository: Attempt ${attempt + 1}, message = \"$userMessage\"")
